@@ -51,6 +51,8 @@ void temper_init(void) {
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
+
 	temper_open(argv[1]);
 	temper_init();
 
