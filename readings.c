@@ -3,10 +3,11 @@
 #include <math.h>
 
 #include "comms.h"
+#include "readings.h"
 
-static double lasttemp = FP_NAN;
+enum temper_type { TEMP, HUMIDITY };
 
-double ReadSHT(char TH) {
+double temper_sample(struct temper_readings readings, enum temper_type type) {
 	int xxx=0, bad=0;
 	double tempdata=0;
 	int tempreading;
@@ -14,9 +15,9 @@ double ReadSHT(char TH) {
 	temper_write_complex(0x02, 1);
 	temper_write_complex(0x01, 1);
 
-	if (TH == 'T')
+	if (type == TEMP)
 		temper_write_simple(0x03, 8);
-	else if (TH == 'H')
+	else if (type == HUMIDITY)
 		temper_write_simple(0x05, 8);
 
 	xxx = temper_wait(500);
@@ -35,15 +36,13 @@ double ReadSHT(char TH) {
 
 	tempreading = temper_read(16);
 
-	if (TH == 'T') {
+	if (type == TEMP) {
 		printf("\t\t\t\t\t\tT %04x\n", tempreading);
-		tempdata = (tempreading * 0.01) - 40.0;
-		if (!bad)
-			lasttemp = tempdata;
-	} else if (TH == 'H') {
+		tempdata = (tempreading / 100.0) - 40.0;
+	} else if (type == HUMIDITY) {
 		printf("\t\t\t\t\t\t\t\t\tH %04x\n", tempreading);
 
-		if (isnan(lasttemp)) {
+		if (isnan(readings.temperature_celsius)) {
 			tempdata = FP_NAN;
 		} else {
 			double C1 = -4;
@@ -53,7 +52,7 @@ double ReadSHT(char TH) {
 			double T2 = 0.00008;
 			double rh = round(tempreading);
 			double rh_lin = ((C3 * rh) * rh) + (C2 * rh) + C1;
-			double rh_true = (lasttemp - 25) * (T1 + (T2 * rh)) + rh_lin;
+			double rh_true = (readings.temperature_celsius - 25) * (T1 + (T2 * rh)) + rh_lin;
 			if (rh_true > 100) { rh_true = 100;}
 			if (rh_true < 0.1){ rh_true = 0.1; }
 			tempdata = rh_true;
@@ -67,3 +66,14 @@ double ReadSHT(char TH) {
 	return tempdata;
 }
 
+struct temper_readings temper_getreadings(void) {
+	struct temper_readings readings = {
+		.temperature_celsius = FP_NAN,
+		.relative_humidity = FP_NAN
+	};
+
+	readings.temperature_celsius = temper_sample(readings, TEMP);
+	readings.relative_humidity = temper_sample(readings, HUMIDITY);
+
+	return readings;
+}

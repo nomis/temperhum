@@ -10,8 +10,7 @@
 #include <math.h>
 
 #include "comms.h"
-
-double ReadSHT(char TH);
+#include "readings.h"
 
 void temper_init(void) {
 	printf("Init starting\n");
@@ -58,11 +57,8 @@ int main(int argc, char *argv[]) {
 	temper_init();
 
 	while (1) {
-		double foo = ReadSHT('T');
-		printf("\t\t\t\t\t\tT = %f\n", foo);
-
-		foo = ReadSHT('H');
-		printf("\t\t\t\t\t\t\t\t\tH = %f\n", foo);
+		struct temper_readings readings = temper_getreadings();
+		printf("\t\t\t%.2f℃ / %5.1f%%\n", readings.temperature_celsius, readings.relative_humidity);
 sleep(1);
 	}
 	return 0;
