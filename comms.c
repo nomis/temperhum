@@ -77,13 +77,6 @@ void temper_clock_signal(void) {
 	temper_delay(20);
 }
 
-void temper_clock_flash(void) {
-	temper_clock(0);
-	temper_delay(1);
-	temper_clock(1);
-	temper_delay(1);
-}
-
 void temper_pause(void) {
 	temper_delay(100);
 	temper_clock(1);
@@ -101,12 +94,12 @@ void temper_out(int v) {
 		exit(EXIT_FAILURE);
 	}
 
-	if ((status & TIOCM_RTS) != 0) {
+	if ((status & TIOCM_DTR) != 0) {
 	if (v == TEMPER_0) {
-		if ((status & TIOCM_DTR) != 0 && !ok)
+		if ((status & TIOCM_RTS) != 0 && !ok)
 			printf("out 0->1 while clock high!\n");
 	} else {
-		if ((status & TIOCM_DTR) == 0 && !ok)
+		if ((status & TIOCM_RTS) == 0 && !ok)
 			printf("out 1->0 while clock high!\n");
 	}
 	}
@@ -144,7 +137,7 @@ ok = 1;
 	temper_out(rising);
 	temper_delay(10);
 	temper_clock(1);
-	temper_delay(50);
+	temper_delay(40);
 	temper_out(falling);
 	temper_clock(0);
 	temper_delay(20);
@@ -172,10 +165,6 @@ printf("...\n");
 
 	temper_delay(100);
 	temper_write(0x01, 1);
-
-//	temper_out(1);
-//	temper_clock(1);
-//	temper_clock(0);
 
 	temper_delay(100);
 	while (waited++ < timeout) {

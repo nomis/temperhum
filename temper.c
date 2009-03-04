@@ -24,36 +24,42 @@ void temper_stop_IIC(void) {
 void temper_init(void) {
 	printf("Init starting\n");
 
-	temper_stop_IIC();
+	temper_switch(0, 1);
+
 	temper_delay(100);
-	temper_start_IIC();
 
+
+	temper_switch(1, 0);
 	temper_write(0x9E, 8);
-	temper_pause();
 
+	temper_switch(0, 1);
 	temper_write(0x01, 8);
-	temper_pause();
 
-	temper_write(0x30, 7);
-	temper_pause();
+	temper_switch(0, 1);
+	temper_write(0x60, 8);
 
+	temper_switch(0, 1);
 	temper_write(0x00, 1);
 
-	temper_stop_IIC();
+	temper_switch(0, 1);
+
+
 	temper_delay(100);
-	temper_start_IIC();
 
+
+	temper_switch(1, 0);
 	temper_write(0x9E, 8);
-	temper_pause();
 
+	temper_switch(0, 1);
 	temper_write(0x00, 8);
-	temper_pause();
 
+	temper_switch(0, 1);
 	temper_write(0x00, 8);
-	temper_pause();
 
+	temper_switch(0, 1);
 	temper_write(0x00, 1);
-	temper_stop_IIC();
+
+	temper_switch(0, 1);
 
 	printf("Init done\n");
 }
