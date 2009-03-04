@@ -18,6 +18,7 @@
 # define TEMPER_1 1
 #endif
 
+#define COMMS_C
 #include "comms.h"
 
 static int fd = -1;
@@ -41,6 +42,7 @@ int temper_get(void) {
 	return temper_in();
 }
 
+/* Output */
 void temper_clock(int v) {
 	int status = 0;
 
@@ -75,15 +77,6 @@ void temper_clock_signal(void) {
 	temper_delay(20);
 	temper_clock(0);
 	temper_delay(20);
-}
-
-void temper_pause(void) {
-	temper_delay(100);
-	temper_clock(1);
-	temper_delay(100);
-	temper_out(1);
-	temper_delay(100);
-	temper_clock_signal();
 }
 
 void temper_out(int v) {
@@ -224,6 +217,8 @@ void temper_open(char *dev) {
 		perror("tcsetattr");
 		exit(EXIT_FAILURE);
 	}
+
+	temper_clock(0);
 }
 
 void temper_close(void) {

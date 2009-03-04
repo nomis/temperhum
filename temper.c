@@ -13,20 +13,8 @@
 
 double ReadSHT(char TH);
 
-void temper_start_IIC(void) {
-	temper_switch(1, 0);
-}
-
-void temper_stop_IIC(void) {
-	temper_switch(0, 1);
-}
-
 void temper_init(void) {
 	printf("Init starting\n");
-
-	temper_switch(0, 1);
-
-	temper_delay(100);
 
 
 	temper_switch(1, 0);
@@ -44,9 +32,6 @@ void temper_init(void) {
 	temper_switch(0, 1);
 
 
-	temper_delay(100);
-
-
 	temper_switch(1, 0);
 	temper_write(0x9E, 8);
 
@@ -60,6 +45,7 @@ void temper_init(void) {
 	temper_write(0x00, 1);
 
 	temper_switch(0, 1);
+
 
 	printf("Init done\n");
 }
