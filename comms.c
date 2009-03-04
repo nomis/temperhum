@@ -36,18 +36,12 @@ int temper_in(void) {
 	return (status & TIOCM_CTS) ? TEMPER_0 : TEMPER_1;
 }
 
-int temper_get(void) {
-	temper_out(1);
-	temper_delay(100);
-	return temper_in();
-}
-
 unsigned int temper_read(int n) {
 	unsigned int i = 4 << n;
 	unsigned int v = 0;
 
 	do {
-		v |= temper_get() << --i;
+		v |= temper_in() << --i;
 
 		if (i != 0)
 			temper_write(0x01, 1);
