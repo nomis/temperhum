@@ -40,6 +40,10 @@ unsigned int temper_read(int n) {
 	unsigned int v = 0;
 
 	do {
+		/* why is this required?
+		 * most of the time it'll already be at 1 */
+		temper_out(1);
+		temper_delay(100); /* wait a bit for it to be ready */
 		v |= temper_in() << --i;
 
 		if (i != 0)
@@ -126,12 +130,15 @@ void temper_delay(int n) {
 void temper_clocked_out(int rising, int falling) {
 	temper_out(rising);
 	temper_delay(10);
+
 	temper_clock(1);
 	temper_delay(20);
+
 	if (rising != falling) {
 		temper_delay(20);
 		temper_out(falling);
 	}
+
 	temper_clock(0);
 	temper_delay(20);
 }
@@ -139,28 +146,11 @@ void temper_clocked_out(int rising, int falling) {
 int temper_wait(int timeout) {
 	int waited = 0;
 
-printf("...\n");
-
-#if 0
-	while (waited++ < timeout) {
-		if (temper_in()) {
-			waited = -1;
-			break;
-		}
-		temper_delay(100);
-	}
-
-	if (waited != -1)
-		return -1;
-	waited = 0;
-#endif
-
-//	temper_delay(100);
 	temper_write_simple(0x01, 1);
 
-//	temper_delay(100);
 	while (waited++ < timeout) {
 		temper_delay(100);
+
 		if (!temper_in())
 			return waited;
 	}
