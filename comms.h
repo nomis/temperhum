@@ -14,10 +14,10 @@ void temper_delay(int n);
 #endif
 
 /* Comms */
-int temper_read(void);
+unsigned int temper_read(int n);
 void temper_switch(int rising, int falling);
 int temper_wait(int timeout);
-void temper_write(int data, int len);
+void temper_write(unsigned int data, int len);
 // TODO remove
 int temper_get(void);
 

@@ -4,26 +4,9 @@
 
 #include "comms.h"
 
-double Bin2Dec(const char *s) {
-    double lDec = 0.0;
-
-    if (s == NULL || strlen(s) == 0)
-        s = "0";
-
-    while (*s != '\0')
-    {
-        if (*s == '1')
-            lDec += pow(2.0, strlen(s) - 1);
-        s++;
-    }
-    return lDec;
-}
-
-
 static double lasttemp = 0;
 
 double ReadSHT(char TH) {
-			char buf[20];
 			int xxx=0, bad=0;
 
 	double tempdata=0;
@@ -44,6 +27,7 @@ double ReadSHT(char TH) {
 				printf("waited %d\n", xxx);
 			}
 
+/*
     memset(buf, '\0', sizeof(buf));
     int i;
 
@@ -51,7 +35,7 @@ double ReadSHT(char TH) {
         int s = temper_get();
 
         buf[i] = (s == 0 ? '0' : '1');
-        if (i != 15)
+//        if (i != 15)
 			temper_write(1, 1);
 
         if (i == 7) {
@@ -59,10 +43,14 @@ double ReadSHT(char TH) {
 			temper_write(0, 1);
         }
     }
+*/
+
+		int tempreading = temper_read(2);
 
 			if (TH == 'T')
 			{
-				printf("\t\t\t\t\t\tT %s\n", buf);
+//				printf("\t\t\t\t\t\tT %s\n", buf);
+				printf("\t\t\t\t\t\tT %04x\n", tempreading);
 // 0123 4567 8901 2345
 //   XX XXXX XXXX XXXX
 //				str_temp = Strings.Right(str_data, 14);
@@ -71,7 +59,7 @@ double ReadSHT(char TH) {
 //           XXXX XXXX
 //				str_lsb = Strings.Right(str_temp, 8);
 
-
+/*
     char str_msb[7];
     char str_lsb[9];
 
@@ -84,8 +72,9 @@ double ReadSHT(char TH) {
     double msb = Bin2Dec(str_msb);
     double lsb = Bin2Dec(str_lsb);
    tempdata = (msb * 256.0) + lsb;
+*/
 
-	tempdata = (tempdata * 0.01) - 40.0;
+	tempdata = (tempreading * 0.01) - 40.0;
 if (!bad)
 lasttemp = tempdata;
 
@@ -93,7 +82,8 @@ lasttemp = tempdata;
 			}
 			if (TH == 'H')
 			{
-				printf("\t\t\t\t\t\t\t\t\tH %s\n", buf);
+//				printf("\t\t\t\t\t\t\t\t\tH %s\n", buf);
+				printf("\t\t\t\t\t\t\t\t\tH %04x\n", tempreading);
 //				str_temp = Strings.Right(str_data, 12);
 // 0123 4567 8901 2345
 //      XXXX XXXX XXXX
@@ -102,6 +92,7 @@ lasttemp = tempdata;
 //				str_lsb = Strings.Right(str_temp, 8);
 //           XXXX XXXX
 
+/*
     char str_msb[5];
     char str_lsb[9];
 
@@ -114,6 +105,8 @@ lasttemp = tempdata;
     double msb = Bin2Dec(str_msb);
     double lsb = Bin2Dec(str_lsb);
    tempdata = (msb * 256.0) + lsb;
+*/
+
 
 
             double C1 = -4;
@@ -121,12 +114,12 @@ lasttemp = tempdata;
             double C3 = -2.8E-06;
             double T1 = 0.01;
             double T2 = 0.00008;
-            double rh = round(tempdata);
+            double rh = round(tempreading);
 			double rh_lin = ((C3 * rh) * rh) + (C2 * rh) + C1;
             double rh_true = (lasttemp - 25) * (T1 + (T2 * rh)) + rh_lin;
             if (rh_true > 100) { rh_true = 100;}
             if (rh_true < 0.1){ rh_true = 0.1; }
-tempdata= rh_true;
+tempdata = rh_true;
 
 			}
 /*

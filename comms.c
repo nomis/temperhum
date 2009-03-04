@@ -42,6 +42,25 @@ int temper_get(void) {
 	return temper_in();
 }
 
+unsigned int temper_read(int n) {
+	unsigned int i = 4 << n;
+	unsigned int v = 0;
+
+	do {
+		v |= temper_get() << --i;
+
+		if (i != 0)
+			temper_write(0x01, 1);
+
+		if (i > 0 && (i & 7) == 0) {
+			temper_switch(1, 0);
+			temper_write(0x00, 1);
+		}
+	} while (i > 0);
+
+	return v;
+}
+
 /* Output */
 void temper_clock(int v) {
 	int status = 0;
@@ -62,8 +81,12 @@ void temper_clock(int v) {
 //printf("clk %d\n", v == TEMPER_0);
 	if (v == TEMPER_0)
 		status |= TIOCM_DTR;
-	else
+	else if (v == TEMPER_1)
 		status &= ~TIOCM_DTR;
+	else {
+		fprintf(stderr, "Internal error\n");
+		exit(EXIT_FAILURE);
+	}
 
 	if (ioctl(fd, TIOCMSET, &status) < 0) {
 		perror("TIOCMSET/DTR");
@@ -100,8 +123,12 @@ void temper_out(int v) {
 //printf("out %d\n", v == TEMPER_0);
 	if (v == TEMPER_0)
 		status |= TIOCM_RTS;
-	else
+	else if (v == TEMPER_1)
 		status &= ~TIOCM_RTS;
+	else {
+		fprintf(stderr, "Internal error\n");
+		exit(EXIT_FAILURE);
+	}
 
 	if (ioctl(fd, TIOCMSET, &status) < 0) {
 		perror("TIOCMSET/RTS");
@@ -168,7 +195,7 @@ printf("...\n");
 	return -1;
 }
 
-void temper_write(int data, int len) {
+void temper_write(unsigned int data, int len) {
 	while (len-- > 0) {
 		temper_out(data >> len & 1);
 		temper_clock_signal();
