@@ -1,18 +1,39 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+#include "comms.h"
+
+double Bin2Dec(const char *s) {
+    double lDec = 0.0;
+
+    if (s == NULL || strlen(s) == 0)
+        s = "0";
+
+    while (*s != '\0')
+    {
+        if (*s == '1')
+            lDec += pow(2.0, strlen(s) - 1);
+        s++;
+    }
+    return lDec;
+}
+
 		void TransStart() {
-			SDout(1);
-			Sclk(0);
-			Delay(1);
-			Sclk(1);
-			Delay(1);
-			SDout(0);
-			Delay(1);
-			Sclk(0);
-			Delay(1);
-			Sclk(1);
-			Delay(1);
-			SDout(1);
-			Delay(1);
-			Sclk(0);
+			temper_out(1);
+			temper_clock(0);
+			temper_delay(1);
+			temper_clock(1);
+			temper_delay(1);
+			temper_out(0);
+			temper_delay(1);
+			temper_clock(0);
+			temper_delay(1);
+			temper_clock(1);
+			temper_delay(1);
+			temper_out(1);
+			temper_delay(1);
+			temper_clock(0);
 		}
 
 static double lasttemp = 0;
@@ -25,81 +46,81 @@ double ReadSHT(char TH) {
 
 	double tempdata=0;
 
-			Delay(1);
+			temper_delay(1);
 			TransStart();
-			SDout(0);
-			HiLowSCLK();
-			SDout(0);
-			HiLowSCLK();
-			SDout(0);
-			HiLowSCLK();
-			SDout(0);
-			HiLowSCLK();
+			temper_out(0);
+			temper_clock_signal();
+			temper_out(0);
+			temper_clock_signal();
+			temper_out(0);
+			temper_clock_signal();
+			temper_out(0);
+			temper_clock_signal();
 			if (TH == 'T')
 			{
-				SDout(0);
-				HiLowSCLK();
-				SDout(0);
-				HiLowSCLK();
-				SDout(1);
-				HiLowSCLK();
-				SDout(1);
-				HiLowSCLK();
+				temper_out(0);
+				temper_clock_signal();
+				temper_out(0);
+				temper_clock_signal();
+				temper_out(1);
+				temper_clock_signal();
+				temper_out(1);
+				temper_clock_signal();
 			}
 			if (TH == 'H')
 			{
-				SDout(0);
-				HiLowSCLK();
-				SDout(1);
-				HiLowSCLK();
-				SDout(0);
-				HiLowSCLK();
-				SDout(1);
-				HiLowSCLK();
+				temper_out(0);
+				temper_clock_signal();
+				temper_out(1);
+				temper_clock_signal();
+				temper_out(0);
+				temper_clock_signal();
+				temper_out(1);
+				temper_clock_signal();
 			}
-			SDout(1);
-			Sclk(1);
-			Sclk(0);
-			while (((tt = SDin()) == 1) & (xxx < 0x3e8))
+			temper_out(1);
+			temper_clock(1);
+			temper_clock(0);
+			while (((tt = temper_in()) == 1) & (xxx < 0x3e8))
 			{
-				Delay(1);
+				temper_delay(1);
 				xxx++;
 			}
 			printf("after %d, %d\n", xxx, tt);
-			if (SDin() == 1)
+			if (temper_in() == 1)
 			{
 //				printf("BAD\n");
 				bad = 1;
 			}
-			SDout(1);
-			Sclk(1);
+			temper_out(1);
+			temper_clock(1);
 
     memset(buf, '\0', sizeof(buf));
     int i;
 
     for (i = 0; i < 16; i++) {
-        int s = SDin();
+        int s = temper_in();
 
         buf[i] = (s == 0 ? '0' : '1');
         if (i != 15)
-			HiLowSCLK();
+			temper_clock_signal();
 
         if (i == 7) {
-            SDout(0);
-            Sclk(1);
-            Delay(1);
-            Sclk(0);
-            SDout(1);
-            Sclk(1);
-            HiLowSCLK();
+            temper_out(0);
+            temper_clock(1);
+            temper_delay(1);
+            temper_clock(0);
+            temper_out(1);
+            temper_clock(1);
+            temper_clock_signal();
         }
     }
 
-			SDout(1);
-			Sclk(1);
-			Delay(1);
-			Sclk(0);
-			SDout(1);
+			temper_out(1);
+			temper_clock(1);
+			temper_delay(1);
+			temper_clock(0);
+			temper_out(1);
 			if (TH == 'T')
 			{
 				printf("\t\t\t\t\t\tT %s\n", buf);
@@ -119,7 +140,7 @@ double ReadSHT(char TH) {
     str_msb[6] = '\0';
 
     memcpy(str_lsb, buf+8, 8);
-    str_lsb[9] = '\0';
+    str_lsb[8] = '\0';
 
     double msb = Bin2Dec(str_msb);
     double lsb = Bin2Dec(str_lsb);
@@ -149,7 +170,7 @@ lasttemp = tempdata;
     str_msb[4] = '\0';
 
     memcpy(str_lsb, buf+8, 8);
-    str_lsb[9] = '\0';
+    str_lsb[8] = '\0';
 
     double msb = Bin2Dec(str_msb);
     double lsb = Bin2Dec(str_lsb);
@@ -193,7 +214,7 @@ return -99;
 			object C3 = -2.8E-06;
 			decimal T1 = 0.01M;
 			decimal T2 = 0.00008M;
-			Delay(4);
+			temper_delay(4);
 			int rh = (int) Math.Round(ReadSHT("H"));
 			decimal rh_lin = Conversions.ToDecimal(Operators.AddObject(Operators.AddObject(Operators.MultiplyObject(Operators.MultiplyObject(C3, rh), rh), decimal.Multiply(C2, new decimal(rh))), C1));
 			decimal rh_true = decimal.Add(decimal.Multiply(decimal.Subtract(ReadTEMPsh10, 25M), decimal.Add(T1, decimal.Multiply(T2, new decimal(rh)))), rh_lin);
