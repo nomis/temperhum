@@ -13,11 +13,49 @@
 
 double ReadSHT(char TH);
 
+void temper_start_IIC(void) {
+	temper_switch(1, 0);
+}
+
+void temper_stop_IIC(void) {
+	temper_switch(0, 1);
+}
+
 void temper_init(void) {
-	fprintf(stderr, "Init starting\n");
-	WriteP1P0(1, "0110000");
-	WriteP1P0(0, "00000000");
-	fprintf(stderr, "Init done\n");
+	printf("Init starting\n");
+
+	temper_stop_IIC();
+	temper_delay(100);
+	temper_start_IIC();
+
+	temper_write(0x9E, 8);
+	temper_pause();
+
+	temper_write(0x01, 8);
+	temper_pause();
+
+	temper_write(0x30, 7);
+	temper_pause();
+
+	temper_write(0x00, 1);
+
+	temper_stop_IIC();
+	temper_delay(100);
+	temper_start_IIC();
+
+	temper_write(0x9E, 8);
+	temper_pause();
+
+	temper_write(0x00, 8);
+	temper_pause();
+
+	temper_write(0x00, 8);
+	temper_pause();
+
+	temper_write(0x00, 1);
+	temper_stop_IIC();
+
+	printf("Init done\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -26,10 +64,11 @@ int main(int argc, char *argv[]) {
 
 	while (1) {
 		double foo = ReadSHT('T');
-		printf("T = %f\n", foo);
+		printf("\t\t\t\t\t\tT = %f\n", foo);
 
 		foo = ReadSHT('H');
-		printf("\t\t\tH = %f\n", foo);
+		printf("\t\t\t\t\t\t\t\t\tH = %f\n", foo);
+sleep(1);
 	}
 	return 0;
 }

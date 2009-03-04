@@ -19,108 +19,47 @@ double Bin2Dec(const char *s) {
     return lDec;
 }
 
-		void TransStart() {
-			temper_out(1);
-			temper_clock(0);
-			temper_delay(1);
-			temper_clock(1);
-			temper_delay(1);
-			temper_out(0);
-			temper_delay(1);
-			temper_clock(0);
-			temper_delay(1);
-			temper_clock(1);
-			temper_delay(1);
-			temper_out(1);
-			temper_delay(1);
-			temper_clock(0);
-		}
 
 static double lasttemp = 0;
 
 double ReadSHT(char TH) {
 			char buf[20];
-			int xxx=0, bad=0, tt;
-//			string str_msb = "";
-//			string str_lsb = "";
+			int xxx=0, bad=0;
 
 	double tempdata=0;
 
-			temper_delay(1);
-			TransStart();
-			temper_out(0);
-			temper_clock_signal();
-			temper_out(0);
-			temper_clock_signal();
-			temper_out(0);
-			temper_clock_signal();
-			temper_out(0);
-			temper_clock_signal();
+			temper_switch(1, 0);
+			temper_switch(0, 1);
+
 			if (TH == 'T')
-			{
-				temper_out(0);
-				temper_clock_signal();
-				temper_out(0);
-				temper_clock_signal();
-				temper_out(1);
-				temper_clock_signal();
-				temper_out(1);
-				temper_clock_signal();
-			}
-			if (TH == 'H')
-			{
-				temper_out(0);
-				temper_clock_signal();
-				temper_out(1);
-				temper_clock_signal();
-				temper_out(0);
-				temper_clock_signal();
-				temper_out(1);
-				temper_clock_signal();
-			}
-			temper_out(1);
-			temper_clock(1);
-			temper_clock(0);
-			while (((tt = temper_in()) == 1) & (xxx < 0x3e8))
-			{
-				temper_delay(1);
-				xxx++;
-			}
-			printf("after %d, %d\n", xxx, tt);
-			if (temper_in() == 1)
-			{
-//				printf("BAD\n");
+				temper_write(0x03, 8);
+			else if (TH == 'H')
+				temper_write(0x05, 8);
+
+			xxx = temper_wait(500);
+			if (xxx < 0) {
 				bad = 1;
+				printf("bad 1\n");
+			} else {
+				printf("waited %d\n", xxx);
 			}
-			temper_out(1);
-			temper_clock(1);
 
     memset(buf, '\0', sizeof(buf));
     int i;
 
     for (i = 0; i < 16; i++) {
-        int s = temper_in();
+        int s = temper_get();
 
         buf[i] = (s == 0 ? '0' : '1');
         if (i != 15)
-			temper_clock_signal();
+			temper_write(1, 1);
 
         if (i == 7) {
-            temper_out(0);
-            temper_clock(1);
-            temper_delay(1);
-            temper_clock(0);
-            temper_out(1);
-            temper_clock(1);
-            temper_clock_signal();
+			temper_switch(1, 0);
+			temper_write(0, 1);
         }
     }
 
-			temper_out(1);
-			temper_clock(1);
-			temper_delay(1);
-			temper_clock(0);
-			temper_out(1);
 			if (TH == 'T')
 			{
 				printf("\t\t\t\t\t\tT %s\n", buf);
@@ -195,9 +134,12 @@ tempdata= rh_true;
 			double lsb = Bin2Dec(str_lsb);
 			double tempdata = (msb * 256.0) + lsb;
 			double ReadSHT = tempdata;
-*/
 
 			Stop_IIC();
+*/
+
+temper_switch(0, 1);
+
 if (bad)
 return -99;
 			return tempdata;
