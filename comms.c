@@ -22,7 +22,6 @@
 #include "comms.h"
 
 static int fd = -1;
-static int ok = 0;
 
 /* Input */
 int temper_in(void) {
@@ -37,18 +36,18 @@ int temper_in(void) {
 }
 
 unsigned int temper_read(int n) {
-	unsigned int i = 4 << n;
+	unsigned int i = n;
 	unsigned int v = 0;
 
 	do {
 		v |= temper_in() << --i;
 
 		if (i != 0)
-			temper_write(0x01, 1);
+			temper_write_simple(0x01, 1);
 
 		if (i > 0 && (i & 7) == 0) {
-			temper_switch(1, 0);
-			temper_write(0x00, 1);
+			temper_write_complex(0x02, 1);
+			temper_write_simple(0x00, 1);
 		}
 	} while (i > 0);
 
@@ -72,7 +71,6 @@ void temper_clock(int v) {
 			printf("clk 0 already set!\n");
 	}
 
-//printf("clk %d\n", v == TEMPER_0);
 	if (v == TEMPER_0)
 		status |= TIOCM_DTR;
 	else if (v == TEMPER_1)
@@ -88,14 +86,6 @@ void temper_clock(int v) {
 	}
 }
 
-void temper_clock_signal(void) {
-	temper_delay(10);
-	temper_clock(1);
-	temper_delay(20);
-	temper_clock(0);
-	temper_delay(20);
-}
-
 void temper_out(int v) {
 	int status = 0;
 
@@ -104,17 +94,6 @@ void temper_out(int v) {
 		exit(EXIT_FAILURE);
 	}
 
-	if ((status & TIOCM_DTR) != 0) {
-	if (v == TEMPER_0) {
-		if ((status & TIOCM_RTS) != 0 && !ok)
-			printf("out 0->1 while clock high!\n");
-	} else {
-		if ((status & TIOCM_RTS) == 0 && !ok)
-			printf("out 1->0 while clock high!\n");
-	}
-	}
-
-//printf("out %d\n", v == TEMPER_0);
 	if (v == TEMPER_0)
 		status |= TIOCM_RTS;
 	else if (v == TEMPER_1)
@@ -135,10 +114,8 @@ void temper_delay(int n) {
 	struct timespec req;
 
 	req.tv_sec = 0;
-// TODO 10000
 	req.tv_nsec = 50000 * n;
 
-//printf("dly %d\n", n);
 	if (nanosleep(&req, NULL) != 0) {
 		perror("nanosleep");
 		exit(EXIT_FAILURE);
@@ -146,16 +123,17 @@ void temper_delay(int n) {
 }
 
 /* Comms */
-void temper_switch(int rising, int falling) {
-ok = 1;
+void temper_clocked_out(int rising, int falling) {
 	temper_out(rising);
 	temper_delay(10);
 	temper_clock(1);
-	temper_delay(40);
-	temper_out(falling);
+	temper_delay(20);
+	if (rising != falling) {
+		temper_delay(20);
+		temper_out(falling);
+	}
 	temper_clock(0);
 	temper_delay(20);
-ok = 0;
 }
 
 int temper_wait(int timeout) {
@@ -177,10 +155,10 @@ printf("...\n");
 	waited = 0;
 #endif
 
-	temper_delay(100);
-	temper_write(0x01, 1);
+//	temper_delay(100);
+	temper_write_simple(0x01, 1);
 
-	temper_delay(100);
+//	temper_delay(100);
 	while (waited++ < timeout) {
 		temper_delay(100);
 		if (!temper_in())
@@ -189,11 +167,14 @@ printf("...\n");
 	return -1;
 }
 
-void temper_write(unsigned int data, int len) {
-	while (len-- > 0) {
-		temper_out(data >> len & 1);
-		temper_clock_signal();
-	}
+void temper_write_simple(unsigned int data, int len) {
+	while (len-- > 0)
+		temper_clocked_out(data >> len & 1, data >> len & 1);
+}
+
+void temper_write_complex(unsigned int data, int len) {
+	while (len-- > 0)
+		temper_clocked_out(data >> (2*len+1) & 1, data >> (2*len) & 1);
 }
 
 /* Device */

@@ -17,39 +17,40 @@ void temper_init(void) {
 	printf("Init starting\n");
 
 
-	temper_switch(1, 0);
-	temper_write(0x9E, 8);
+	temper_write_complex(0x02, 1);
+	temper_write_simple(0x9E, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x01, 8);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x01, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x60, 8);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x60, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x00, 1);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x00, 1);
 
-	temper_switch(0, 1);
+	temper_write_complex(0x01, 1);
 
 
-	temper_switch(1, 0);
-	temper_write(0x9E, 8);
+	temper_write_complex(0x02, 1);
+	temper_write_simple(0x9E, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x00, 8);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x00, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x00, 8);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x00, 8);
 
-	temper_switch(0, 1);
-	temper_write(0x00, 1);
+	temper_write_complex(0x01, 1);
+	temper_write_simple(0x00, 1);
 
-	temper_switch(0, 1);
+	temper_write_complex(0x01, 1);
 
 
 	printf("Init done\n");
 }
 
+void temper_delay(int n);
 int main(int argc, char *argv[]) {
 	(void)argc;
 

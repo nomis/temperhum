@@ -11,13 +11,13 @@ double ReadSHT(char TH) {
 
 	double tempdata=0;
 
-			temper_switch(1, 0);
-			temper_switch(0, 1);
+temper_write_complex(0x02, 1);
+temper_write_complex(0x01, 1);
 
 			if (TH == 'T')
-				temper_write(0x03, 8);
+				temper_write_simple(0x03, 8);
 			else if (TH == 'H')
-				temper_write(0x05, 8);
+				temper_write_simple(0x05, 8);
 
 			xxx = temper_wait(500);
 			if (xxx < 0) {
@@ -25,6 +25,12 @@ double ReadSHT(char TH) {
 				printf("bad 1\n");
 			} else {
 				printf("waited %d\n", xxx);
+			}
+
+			xxx = temper_read(1);
+			if (xxx == 1) {
+				bad = 1;
+				printf("bad 2\n");
 			}
 
 /*
@@ -45,7 +51,7 @@ double ReadSHT(char TH) {
     }
 */
 
-		int tempreading = temper_read(2);
+		int tempreading = temper_read(16);
 
 			if (TH == 'T')
 			{
@@ -131,7 +137,7 @@ tempdata = rh_true;
 			Stop_IIC();
 */
 
-temper_switch(0, 1);
+temper_write_complex(0x01, 1);
 
 if (bad)
 return -99;

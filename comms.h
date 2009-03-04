@@ -5,7 +5,7 @@ int temper_in(void);
 
 /* Output */
 void temper_clock(int v);
-void temper_clock_signal(void);
+void temper_clocked_out(int rising, int falling);
 void temper_out(int v);
 
 /* Timing */
@@ -15,11 +15,9 @@ void temper_delay(int n);
 
 /* Comms */
 unsigned int temper_read(int n);
-void temper_switch(int rising, int falling);
 int temper_wait(int timeout);
-void temper_write(unsigned int data, int len);
-// TODO remove
-int temper_get(void);
+void temper_write_simple(unsigned int data, int len);
+void temper_write_complex(unsigned int data, int len);
 
 /* Device */
 void temper_open(char *dev);
