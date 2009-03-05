@@ -52,7 +52,9 @@ int main(int argc, char *argv[]) {
 
 	while(1) {
 		struct sht1x_readings readings = sht1x_getreadings(status.low_resolution);
-		printf("; T %3.2f℃ / RH %5.1f%% / DP %3.2f℃\n", readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
+		struct timespec tp;
+		clock_gettime(CLOCK_REALTIME, &tp);
+		printf("%lu.%09lu; T %3.2f℃ / RH %5.1f%% / DP %3.2f℃\n", tp.tv_sec, tp.tv_nsec, readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
 	}
 
 	sht1x_close();
