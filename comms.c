@@ -137,25 +137,29 @@ void sht1x_conn_reset(void) {
 	}
 }
 
-void sht1x_trans_start(void) {
-	/* Raise DATA */
-	sht1x_out(1);
+void sht1x_trans_start(int part1, int part2) {
+	if (part1) {
+		/* Raise DATA */
+		sht1x_out(1);
 
-	/* Raise SCK */
-	sht1x_sck(1);
+		/* Raise SCK */
+		sht1x_sck(1);
 
-	/* Lower data */
-	sht1x_out(0);
+		/* Lower data */
+		sht1x_out(0);
 
-	/* Toggle SCK */
-	sht1x_sck(0);
-	sht1x_sck(1);
+		/* Toggle SCK */
+		sht1x_sck(0);
+	}
+	if (part2) {
+		sht1x_sck(1);
 
-	/* Raise data */
-	sht1x_out(1);
+		/* Raise data */
+		sht1x_out(1);
 
-	/* Lower SCK */
-	sht1x_sck(0);
+		/* Lower SCK */
+		sht1x_sck(0);
+	}
 }
 
 /* Response:
@@ -173,23 +177,23 @@ unsigned int sht1x_read(int bytes) {
 	if (bytes < 1 || bytes > 2)
 		return v;
 
-	bits = (bytes + 1) * 8;
-
 	/* Raise DATA waiting for response */
 	sht1x_out(1);
+
+	bits = (bytes + 1) * 8;
 
 	/* Wait for response */
 	while (err) {
 		err = sht1x_in();
-		printf(".");
+//		printf(".");
 
 		timeout--;
 		if (timeout <= 0) {
-			printf("?");
+//			printf("?");
 			return v;
 		}
+//		printf("!");
 	}
-	printf("!");
 
 	/* Read MSB, LSB and checksum */
 	do {
@@ -226,7 +230,7 @@ unsigned int sht1x_read(int bytes) {
 	if (bytes >= 1)
 		crc = crc_table[crc ^ (v >> 8 & 0x000000FF)];
 
-printf("%08x", v);
+//printf("%08x", v);
 
 	/* Reverse checksum bits */
 	v = (v & 0xFFFFFF00)
@@ -239,7 +243,7 @@ printf("%08x", v);
 		| (v << 5 & 0x40)
 		| (v << 7 & 0x80);
 
-printf("/%02x/%02x", v & 0xFF, crc);
+//printf("/%02x/%02x", v & 0xFF, crc);
 
 	/* Checksum OK */
 	if ((v & 0xFE) == (crc & 0xFE))
@@ -285,7 +289,7 @@ int sht1x_write(unsigned char data) {
 /* Control */
 int sht1x_command(int addr, int cmd) {
 	/* Start transmission */
-	sht1x_trans_start();
+	sht1x_trans_start(1, addr == SHT1X_ADDR ? 1 : 0);
 
 	/* Reset CRC */
 	crc = crc_init;
@@ -410,12 +414,6 @@ void sht1x_open(char *dev) {
 
 	if (tcsetattr(fd, TCSANOW, &tio) != 0) {
 		perror("tcsetattr");
-		exit(EXIT_FAILURE);
-	}
-
-	int err = sht1x_device_reset();
-	if (err) {
-		printf("sht1x_open: Error resetting device");
 		exit(EXIT_FAILURE);
 	}
 }

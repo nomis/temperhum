@@ -27,8 +27,8 @@ double sht1x_sample(struct sht1x_readings readings, int low_resolution, enum sht
 		return NAN;
 
 	resp = sht1x_read(2);
-//	if ((resp & 0xFF000000) != 0)
-//		return NAN;
+	if ((resp & 0xFF000000) != 0)
+		return NAN;
 
 	if (type == TEMP) {
 #if SHT1X_VOLTAGE == 5000

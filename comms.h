@@ -3,14 +3,24 @@
 #define SHT1X_ADDR				0x00
 
 	/* 5 bits */
-#define SHT1X_CMD_M_TEMP			0x03
-#define SHT1X_CMD_M_RH				0x05
-#define SHT1X_CMD_R_SR				0x07
-#define SHT1X_CMD_W_SR				0x06
-#define SHT1X_CMD_S_RESET			0x1E
+#define SHT1X_CMD_M_TEMP		0x03
+#define SHT1X_CMD_M_RH			0x05
+#define SHT1X_CMD_R_SR			0x07
+#define SHT1X_CMD_W_SR			0x06
+#define SHT1X_CMD_S_RESET		0x1E
 
 	/* 4 bits */
-#define SHT1X_CRC_INIT				0x00
+#define SHT1X_CRC_INIT			0x00
+
+
+/* CH341 EEPROM */
+	/* 3 bits */
+#define CH341_ADDR				0x05
+
+	/* 5 bits */
+#define CH341_CMD_WRITE			0x00
+#define CH341_CMD_READ			0x01
+
 
 struct sht1x_status {
 	int valid;
@@ -35,14 +45,14 @@ void sht1x_sck(int v);
 void sht1x_out(int v);
 
 /* Comms */
+void sht1x_trans_start(int part1, int part2);
 void sht1x_conn_reset(void);
-void sht1x_trans_start(void);
-int sht1x_write(unsigned char data);
 
 #endif
 
 /* Comms */
 unsigned int sht1x_read(int bytes);
+int sht1x_write(unsigned char data);
 
 /* Control */
 int sht1x_command(int addr, int cmd);
