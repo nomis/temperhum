@@ -51,7 +51,5 @@ int sht1x_device_reset(void);
 /* Device */
 void sht1x_open(char *dev);
 struct sht1x_status sht1x_read_status(void);
-#if 0
 int sht1x_write_status(struct sht1x_status status);
-#endif
 void sht1x_close(void);

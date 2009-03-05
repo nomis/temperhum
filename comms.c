@@ -346,7 +346,6 @@ struct sht1x_status sht1x_read_status(void) {
 	return status;
 }
 
-#if 0
 int sht1x_write_status(struct sht1x_status status) {
 	unsigned char req = 0;
 	int err;
@@ -356,17 +355,20 @@ int sht1x_write_status(struct sht1x_status status) {
         return err;
 
 	req = 0;
-	if (status.heater != 0)
+	if (status.heater)
 		req |= 1 << 2;
-	if (status.no_reload != 0)
+	if (status.no_reload)
 		req |= 1 << 1;
-	if (status.high_resolution != 0)
+	if (status.low_resolution)
 		req |= 1;
 
+	crc_init = req & 0x0F;
+
 	err = sht1x_write(req);
+	if (err)
+		sht1x_device_reset();
 	return err;
 }
-#endif
 
 /* Device */
 void sht1x_open(char *dev) {
