@@ -5,75 +5,148 @@
 #include "comms.h"
 #include "readings.h"
 
-enum temper_type { TEMP, HUMIDITY };
+enum sht1x_type { TEMP, HUMIDITY };
 
-double temper_sample(struct temper_readings readings, enum temper_type type) {
-	int xxx=0, bad=0;
-	double tempdata=0;
-	int tempreading;
-
-	temper_write_complex(0x02, 1);
-	temper_write_complex(0x01, 1);
-
-	if (type == TEMP)
-		temper_write_simple(0x03, 8);
-	else if (type == HUMIDITY)
-		temper_write_simple(0x05, 8);
-
-	xxx = temper_wait(500);
-	if (xxx < 0) {
-		bad = 1;
-		printf("bad 1\n");
-	} else {
-		printf("waited %d\n", xxx);
-	}
-
-	xxx = temper_read(1);
-	if (xxx == 1) {
-		bad = 1;
-		printf("bad 2\n");
-	}
-
-	tempreading = temper_read(16);
+double sht1x_sample(struct sht1x_readings readings, enum sht1x_type type) {
+	unsigned int resp;
+	int err;
 
 	if (type == TEMP) {
-		printf("\t\t\t\t\t\tT %04x\n", tempreading);
-		tempdata = (tempreading / 100.0) - 40.0;
+		err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_M_TEMP);
 	} else if (type == HUMIDITY) {
-		printf("\t\t\t\t\t\t\t\t\tH %04x\n", tempreading);
+		/* Don't bother reading humidity with temperature */
+		if (isnan(readings.temperature_celsius))
+			return NAN;
 
-		if (isnan(readings.temperature_celsius)) {
-			tempdata = FP_NAN;
-		} else {
-			double C1 = -4;
-			double C2 = 0.0405;
-			double C3 = -2.8E-06;
-			double T1 = 0.01;
-			double T2 = 0.00008;
-			double rh = round(tempreading);
-			double rh_lin = ((C3 * rh) * rh) + (C2 * rh) + C1;
-			double rh_true = (readings.temperature_celsius - 25) * (T1 + (T2 * rh)) + rh_lin;
-			if (rh_true > 100) { rh_true = 100;}
-			if (rh_true < 0.1){ rh_true = 0.1; }
-			tempdata = rh_true;
-		}
+		err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_M_RH);
+	} else {
+		return NAN;
 	}
 
-	temper_write_complex(0x01, 1);
+	if (err)
+		return NAN;
 
-	if (bad)
-		return FP_NAN;
-	return tempdata;
+	resp = sht1x_read(2);
+	if ((resp & 0xFF000000) != 0)
+		return NAN;
+
+	if (type == TEMP) {
+#if SHT1X_VER >= 3
+#	if SHT1X_VOLTAGE == 5000
+		double D1 = -40.1;
+#	elif SHT1X_VOLTAGE == 4500
+		double D1 = -39.8;
+#	elif SHT1X_VOLTAGE == 3500
+		double D1 = -39.7;
+#	elif SHT1X_VOLTAGE == 3000
+		double D1 = -39.6;
+#	elif SHT1X_VOLTAGE == 2500
+		double D1 = -39.4;
+#	else
+		double D1 = NAN;
+#		error "Unknown SHT1X voltage"
+#	endif
+#	if SHT1X_TEMP_RES == 14
+		double D2 = 0.01;
+#	elif SHT1X_TEMP_RES == 12
+		double D2 = 0.04;
+#	else
+		double D2 = NAN;
+#		error "Unknown SHT1X temperature resolution"
+#	endif
+#else
+#	error "Unknown SHT1X version"
+#endif
+		return D1 + D2 * (resp & 0x0000FFFF);
+	} else if (type == HUMIDITY) {
+#if SHT1X_VER >= 4
+#	if SHT1X_HUM_RES == 12
+		double C1 = -2.0468;
+		double C2 = 0.0367;
+		double C3 = -1.5955E-06;
+		double T1 = 0.01;
+		double T2 = 0.00008;
+#	elif SHT1X_HUM_RES == 8
+		double C1 = -2.0468;
+		double C2 = 0.5872;
+		double C3 = -4.0845E-04;
+		double T1 = 0.01;
+		double T2 = 0.00128;
+#	else
+		double C1 = NAN;
+		double C2 = NAN;
+		double C3 = NAN;
+		double T1 = NAN;
+		double T2 = NAN;
+#		error "Unknown SHT1X humidity resolution"
+#	endif
+#elif SHT1X_VER >= 3
+#	if SHT1X_HUM_RES == 12
+		double C1 = -4.000;
+		double C2 = 0.0405;
+		double C3 = -2.8000E-06;
+		double T1 = 0.01;
+		double T2 = 0.00008;
+#	elif SHT1X_HUM_RES == 8
+		double C1 = -4.0000;
+		double C2 = 0.6480;
+		double C3 = -7.2000E-04;
+		double T1 = 0.01;
+		double T2 = 0.00128;
+#	else
+		double C1 = NAN;
+		double C2 = NAN;
+		double C3 = NAN;
+		double T1 = NAN;
+		double T2 = NAN;
+#		error "Unknown SHT1X humidity resolution"
+#	endif
+#else
+		double C1 = NAN;
+		double C2 = NAN;
+		double C3 = NAN;
+		double T1 = NAN;
+		double T2 = NAN;
+#	error "Unknown SHT1X version"
+#endif
+		double rh = (resp & 0x0000FFFF);
+		double rh_lin = C1 + (C2 * rh) + (C3 * rh * rh);
+		double rh_true = (readings.temperature_celsius - 25.0) * (T1 + (T2 * rh)) + rh_lin;
+		if (rh_true > 99.0)
+			rh_true = 100.0;
+		if (rh_true < 0.1)
+			rh_true = 0.1;
+		return rh_true;
+	} else {
+		return NAN;
+	}
 }
 
-struct temper_readings temper_getreadings(void) {
-	struct temper_readings readings = {
-		.temperature_celsius = FP_NAN,
-		.relative_humidity = FP_NAN
+struct sht1x_readings sht1x_getreadings(void) {
+	struct sht1x_readings readings = {
+		.temperature_celsius = NAN,
+		.relative_humidity = NAN,
+		.dew_point = NAN
 	};
 
-	readings.temperature_celsius = temper_sample(readings, TEMP);
-	readings.relative_humidity = temper_sample(readings, HUMIDITY);
+	readings.temperature_celsius = sht1x_sample(readings, TEMP);
+	readings.relative_humidity = sht1x_sample(readings, HUMIDITY);
+
+	/* Calculate de point */
+	if (!isnan(readings.temperature_celsius) && !isnan(readings.relative_humidity)) {
+		double TN, M;
+		double tmp;
+		if (readings.temperature_celsius > 0) {
+			TN = 243.12;
+			M = 17.62;
+		} else {
+			TN = 272.62;
+			M = 22.46;
+		}
+		tmp = log(readings.relative_humidity / 100.0)
+			+ ((M * readings.temperature_celsius) / (TN + readings.temperature_celsius));
+		readings.dew_point = (TN * tmp) / (M - tmp);
+	}
 
 	return readings;
 }
