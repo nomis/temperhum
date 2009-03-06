@@ -1,9 +1,11 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
@@ -374,15 +376,38 @@ int sht1x_write_status(struct sht1x_status status) {
 	return err;
 }
 
+int ttyUSB(const struct dirent *entry) {
+	return !strncmp(entry->d_name, "ttyUSB", 6);
+}
+
 /* Device */
 void sht1x_open(char *dev) {
 	struct termios tio;
+	char path[4096];
+	struct dirent **namelist;
+	int names, i;
 
-	fd = open(dev, O_RDWR | O_NOCTTY);
-	if (fd == -1) {
-		perror(dev);
+	snprintf(path, 4096, "/sys/bus/usb/devices/%s:1.0", dev);
+	names = scandir(path, &namelist, ttyUSB, alphasort);
+	if (names == -1) {
+		perror(path);
 		exit(EXIT_FAILURE);
 	}
+	if (names == 0) {
+		fprintf(stderr, "No ttyUSB devices found for %s\n", dev);
+		exit(EXIT_FAILURE);
+	}
+
+	snprintf(path, 4096, "/dev/%s", namelist[0]->d_name);
+	fd = open(path, O_RDWR | O_NOCTTY);
+	if (fd == -1) {
+		perror(path);
+		exit(EXIT_FAILURE);
+	}
+
+	for (i = 0; i < names; i++)
+		free(namelist[i]);
+	free(namelist);
 
 	if (tcgetattr(fd, &tio) != 0) {
 		perror("tcgetattr");
