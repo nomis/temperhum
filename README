@@ -63,3 +63,9 @@ $ ./temperhum 1-1.1.3
 Sensor specification: http://www.sensirion.com/ (SHT1x Datasheet)
 Serial interface specification: http://wch-ic.com/product/usb/ch341.asp (CH341 English DataSheet)
 EEPROM specification: http://www.microchip.com/ (DS21709J)
+
+
+= Linux Driver =
+
+You'll need this: http://lwn.net/Articles/246334/ until the changes
+are merged to Linus' kernel.
