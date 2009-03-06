@@ -1,0 +1,65 @@
+= Device =
+
+Cheap unbranded hydro-thermometer. The manufacturer only provides some
+basic Windows-only software and incomplete drivers on a CD.
+
+Manufacturer: http://rding.cn/ (eBay store at http://pcsensor.cn/)
+Distributor: http://usb.brando.com.hk/ (has some software updates)
+
+
+= Software =
+
+Aside from the manufacturer's software, which I am unable even to run,
+there's a SourceForge project UTAC which wraps the basic interface with
+a large amount of other stuff. I'm not willing to even try running this
+(it's Windows-only).
+
+The UTAC code appears to be reverse engineered from the original software.
+Unfortunately it's in some .NET language and the quality of the code
+makes me want to throw up. I'm not quite sure what the Delay() function
+is supposed to be doing because any good compiler would optimise it out.
+
+Example: http://utac.svn.sourceforge.net/viewvc/utac/trunk/utac/Components/Temper/TEMPerInterface.cs?revision=54&view=markup
+
+It supports the "TEMPer" temperature only device too, but my code only
+supports "TEMPerHum" (as far as I know) because that's all I have for
+testing.
+
+UTAC: http://sourceforge.net/projects/utac/
+
+
+= Logging =
+
+I've used librrd for storing the data. At the speed required to reliably
+access the device, the main loop runs once per second by itself without
+the need for special timing. The RRD data file will take up ~400MB unless
+you modify the parameters (it's also created on the first run resulting
+in a long delay).
+
+RRD: http://oss.oetiker.ch/rrdtool/
+
+
+= Usage =
+
+Find your device(s). The following lists the physical USB port the device
+is connected to. This is used to refer to it for access and as the RRD
+filename.
+
+$ ls -1 /sys/bus/usb/devices/*/ttyUSB* -d|cut -d / -f 6|cut -d : -f 1
+1-1.1.3
+
+Run the main process:
+
+$ ./temperhum 1-1.1.3
+; Status {Battery: OK, Heater: OFF, Reload: YES, Resolution: HIGH }
+1236342817.173860429; T  26.42℃ / RH  38.36% / DP  11.09℃
+1236342818.371585371; T  25.30℃ / RH  42.28% / DP  11.56℃
+1236342819.428093143; T  25.49℃ / RH  42.11% / DP  11.67℃
+1236342820.485240453; T  25.56℃ / RH  41.92% / DP  11.67℃
+
+
+= Hardware =
+
+Sensor specification: http://www.sensirion.com/ (SHT1x Datasheet)
+Serial interface specification: http://wch-ic.com/product/usb/ch341.asp (CH341 English DataSheet)
+EEPROM specification: http://www.microchip.com/ (DS21709J)
