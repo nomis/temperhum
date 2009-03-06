@@ -63,7 +63,7 @@ void temperhum_rrd_update(char *fname, time_t tv_sec, struct sht1x_readings read
 
 	rrd_clear_error();
 	if (rrd_update_r(fname, "tc:rh:dp", 1, args) != 0)
-		fprintf(stderr, "%s: (%s) %s\n", fname, args, rrd_get_error());
+		fprintf(stderr, "%s: (%s) %s\n", fname, args[0], rrd_get_error());
 }
 
 int main(int argc, char *argv[]) {
