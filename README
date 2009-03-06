@@ -14,6 +14,7 @@ there's a SourceForge project UTAC which wraps the basic interface with
 a large amount of other stuff. I'm not willing to even try running this
 (it's Windows-only).
 
+
 The UTAC code appears to be reverse engineered from the original software.
 Unfortunately it's in some .NET language and the quality of the code
 makes me want to throw up. I'm not quite sure what the Delay() function
@@ -26,6 +27,14 @@ supports "TEMPerHum" (as far as I know) because that's all I have for
 testing.
 
 UTAC: http://sourceforge.net/projects/utac/
+
+
+Tollef Fog Heen has code which can only access the "TEMPer" devices:
+	http://err.no/src/TEMPer.c
+
+Eventually I found the specifications for the device and wrote an
+interface that I consider sane (i.e. no bizarre string/binary conversion
+and actual bitwise operations).
 
 
 = Logging =
