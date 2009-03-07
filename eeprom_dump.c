@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 
 	if (argc != 2) {
-		printf("Usage: %s /dev/ttyUSB0\n", argv[0]);
+		printf("Usage: %s 1-2.3.4\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	sht1x_open(argv[1]);
