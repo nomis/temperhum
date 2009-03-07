@@ -17,9 +17,12 @@
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <setjmp.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +37,7 @@
 #include "comms.h"
 
 static int fd = -1;
+static sigjmp_buf saved;
 
 static unsigned char crc_init = SHT1X_CRC_INIT;
 static unsigned char crc;
@@ -82,6 +86,13 @@ void sht1x_startup_delay(void) {
 	}
 }
 
+void sht1x_alarm(int signum) {
+	(void)signum;
+
+	/* Timer expired; jump */
+	longjmp(saved, 1);
+}
+
 /* Input */
 int sht1x_in(void) {
 	int status = 0;
@@ -94,6 +105,44 @@ int sht1x_in(void) {
 	}
 
 	return (status & TIOCM_CTS) ? 1 : 0;
+}
+
+int sht1x_in_wait(void) {
+	/* Check for ready state */
+	if (sht1x_in()) {
+		struct itimerval timeout;
+		timeout.it_interval.tv_sec = 0;
+		timeout.it_interval.tv_usec = 0;
+		timeout.it_value.tv_sec = 3;
+		timeout.it_value.tv_usec = 500000; /* 500ms */
+
+		/* Jump point */
+		if (sigsetjmp(saved, 1) == 0) {
+			/* Start timer */
+			signal(SIGALRM, sht1x_alarm);
+			if (setitimer(ITIMER_REAL, &timeout, NULL) != 0) {
+				perror("setitimer");
+				exit(EXIT_FAILURE);
+			}
+
+			/* Wait for activity on CTS */
+			ioctl(fd, TIOCMIWAIT, TIOCM_CTS);
+	
+			/* Stop timer */
+			timeout.it_value.tv_sec = 0;
+			timeout.it_value.tv_usec = 0;
+			if (setitimer(ITIMER_REAL, &timeout, NULL) != 0) {
+				perror("setitimer");
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			/* Timer expired */
+		}
+
+		/* Check for ready state */
+		return sht1x_in();
+	}
+	return 0;
 }
 
 /* Output */
@@ -189,30 +238,19 @@ void sht1x_trans_start(int part1, int part2) {
  */
 unsigned int sht1x_read(int bytes) {
 	unsigned int v = 0xFF000000;
-	int err = 1;
-	int timeout = 500000000/DELAY; /* 500ms */
 	int bits;
 
 	if (bytes < 1 || bytes > 2)
 		return v;
 
+	bits = (bytes + 1) * 8;
+
 	/* Raise DATA waiting for response */
 	sht1x_out(1);
 
-	bits = (bytes + 1) * 8;
-
 	/* Wait for response */
-	while (err) {
-		err = sht1x_in();
-//		printf(".");
-
-		timeout--;
-		if (timeout <= 0) {
-//			printf("?");
-			return v;
-		}
-//		printf("!");
-	}
+	if (sht1x_in_wait())
+		return v;
 
 	/* Read MSB, LSB and checksum */
 	do {

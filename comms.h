@@ -53,9 +53,11 @@ struct sht1x_status {
 /* Timing */
 void sht1x_delay(void);
 void sht1x_startup_delay(void);
+void sht1x_alarm(int signum);
 
 /* Input */
 int sht1x_in(void);
+int sht1x_in_wait(void);
 
 /* Output */
 void sht1x_sck(int v);
