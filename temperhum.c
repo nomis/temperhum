@@ -32,17 +32,38 @@ void temperhum_rrd_open(char *fname) {
 	struct stat buf;
 
 	if (stat(fname, &buf) != 0) {
-		const char *args[7] = {
+		const char *args[21] = {
 			"DS:tc:GAUGE:60:U:U",
 			"DS:rh:GAUGE:60:U:U",
 			"DS:dp:GAUGE:60:U:U",
-			"RRA:AVERAGE:0:1:604800",
-			"RRA:AVERAGE:0.5:5:6289920",
-			"RRA:AVERAGE:0.5:60:5241600",
-			"RRA:AVERAGE:0.5:600:5241600"
+
+			"RRA:HWPREDICT:86400:0.75:0.75:86400", /* daily */
+			"RRA:HWPREDICT:86400:0.75:0.75:31449600", /* yearly */
+
+			"RRA:AVERAGE:0:1:604800",        /* avg  1s for  1w */
+
+			"RRA:MIN:0.5:30:1051920",        /* min             */
+			"RRA:AVERAGE:0.5:30:1051920",    /* avg 30s for  1y */
+			"RRA:MAX:0.5:30:1051920",        /* max             */
+
+			"RRA:MIN:0.5:600:1051920",       /* min             */
+			"RRA:AVERAGE:0.5:600:1051920",   /* avg 10m for 20y */
+			"RRA:MAX:0.5:600:1051920",       /* max             */
+
+			"RRA:MIN:0.5:3600:175320",       /* min             */
+			"RRA:AVERAGE:0.5:3600:175320",   /* avg  1h for 20y */
+			"RRA:MAX:0.5:3600:175320",       /* max             */
+
+			"RRA:MIN:0.5:21600:29220",       /* min             */
+			"RRA:AVERAGE:0.5:21600:29220",   /* avg  6h for 20y */
+			"RRA:MAX:0.5:21600:29220",       /* max             */
+
+			"RRA:MIN:0.5:86400:7305",        /* min             */
+			"RRA:AVERAGE:0.5:86400:7305",    /* avg  1h for 20y */
+			"RRA:MAX:0.5:86400:7305",        /* max             */
 		};
 		rrd_clear_error();
-		if (rrd_create_r(fname, 1, time(NULL) - 1, 7, args) != 0) {
+		if (rrd_create_r(fname, 1, time(NULL) - 1, 21, args) != 0) {
 			fprintf(stderr, "%s: %s\n", fname, rrd_get_error());
 			exit(EXIT_FAILURE);
 		}
