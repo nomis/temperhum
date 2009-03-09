@@ -46,7 +46,7 @@ and actual bitwise operations).
 	
 I've used librrd for storing the data. At the speed required to reliably
 access the device, the main loop runs once per second by itself without
-the need for special timing. The RRD data file will take up ~400MB unless
+the need for special timing. The RRD data file will take up 187MB unless
 you modify the parameters (it's also created on the first run resulting
 in a long delay).
 
