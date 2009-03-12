@@ -2,3 +2,4 @@ temperhum
 eeprom_dump
 README.html
 *.rrd
+*.o
