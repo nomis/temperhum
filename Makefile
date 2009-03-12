@@ -1,6 +1,7 @@
 all: README.html
 clean:
 	rm -f README.html
+
 README.html: README Makefile
 	sed \
 		-e 's@$$@<br>@' \
