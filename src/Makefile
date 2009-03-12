@@ -8,7 +8,7 @@ all: temperhum eeprom_dump
 clean:
 	rm -f temperhum eeprom_dump *.o
 
-%.o: %.c
+%.o: %.c Makefile
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 temperhum: $(TEMPERHUM_OBJS) Makefile
