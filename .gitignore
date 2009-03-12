@@ -3,3 +3,4 @@ eeprom_dump
 README.html
 *.rrd
 *.o
+*.exe
