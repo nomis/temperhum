@@ -16,6 +16,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -36,6 +37,9 @@ void temperhum_run(char *ip, unsigned short port) {
 	int s = -1;
 	long ret;
 	struct tray_status status;
+	char recv_buf[128];
+	char parse_buf[128];
+	unsigned int parse_pos = 0;
 
 	odprintf("ip=%s", ip);
 	odprintf("port=%d", port);
@@ -43,7 +47,7 @@ void temperhum_run(char *ip, unsigned short port) {
 	ret = WSAStartup(MAKEWORD(2,0), &wsaData);
 	if (ret != 0) {
 		odprintf("WSAStartup: %d", ret);
-		MessageBox(NULL, "WSAStartup failed", TITLE, MB_OK|MB_ICONERROR);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock2 startup failed (%d)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -72,27 +76,21 @@ void temperhum_run(char *ip, unsigned short port) {
 
 	odprintf("family=%d", family);
 	if (family == AF_UNSPEC) {
-		MessageBox(NULL, "Invalid IP specified", TITLE, MB_OK|MB_ICONERROR);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Invalid IP \"%s\" specified", ip);
 		exit(EXIT_FAILURE);
 	}
 
 	status.conn = NOT_CONNECTED;
-	status.temperature_celsius = NAN;
-	status.relative_humidity = NAN;
-	status.dew_point = NAN;
 	update_tray(&status);
 
 	while (1) {
 		if (status.conn != CONNECTED) {
-			status.conn = NOT_CONNECTED;
-			update_tray(&status);
-
 			SetLastError(0);
 			s = socket(family, SOCK_STREAM, IPPROTO_TCP);
 			odprintf("socket: %d (%d)", s, GetLastError());
 
 			if (s != -1) {
-				int timeout = 5;
+				int timeout = 5000; /* 5 seconds */
 
 				SetLastError(0);
 				ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void*)&timeout, sizeof(&timeout));
@@ -112,6 +110,9 @@ void temperhum_run(char *ip, unsigned short port) {
 				odprintf("connect: %d (%d)", ret, GetLastError());
 				if (ret == 0) {
 					status.conn = CONNECTED;
+					status.temperature_celsius = NAN;
+					status.relative_humidity = NAN;
+					status.dew_point = NAN;
 					update_tray(&status);
 				} else {
 					status.conn = NOT_CONNECTED;
@@ -126,8 +127,62 @@ void temperhum_run(char *ip, unsigned short port) {
 				Sleep(1000);
 		} else {
 			SetLastError(0);
-			
-			exit(EXIT_SUCCESS);
+			ret = recv(s, recv_buf, sizeof(recv_buf), 0);
+			odprintf("recv: %d (%d)", ret, GetLastError());
+			if (ret <= 0) {
+					status.conn = NOT_CONNECTED;
+					update_tray(&status);
+
+					parse_pos = 0;
+					closesocket(s);
+					s = -1;
+			} else {
+				int size, i;
+
+				size = ret;
+				for (i = 0; i < size; i++) {
+					/* find a newline and parse the buffer */
+					if (recv_buf[i] == '\n') {
+						char msg_type[16];
+
+						ret = sscanf(parse_buf, "%16s", msg_type);
+						if (ret == 1) {
+							odprintf("msg_type: %s", msg_type);
+							if (!strcmp(msg_type, "TEMPC")) {
+								ret = sscanf(parse_buf, "%*s %lf", &status.temperature_celsius);
+								if (ret != 1)
+									status.temperature_celsius = NAN;
+							} else if (!strcmp(msg_type, "RHUM%")) {
+								ret = sscanf(parse_buf, "%*s %lf", &status.relative_humidity);
+								if (ret != 1)
+									status.relative_humidity = NAN;
+							} else if (!strcmp(msg_type, "DEWPC")) {
+								ret = sscanf(parse_buf, "%*s %lf", &status.dew_point);
+								if (ret != 1)
+									status.dew_point = NAN;
+							} else if (!strcmp(msg_type, "FLUSH")) {
+								update_tray(&status);
+							}
+						}
+
+						/* clear buffer */
+						parse_pos = 0;
+
+					/* buffer overflow */
+					} else if (parse_pos == sizeof(parse_buf)/sizeof(char) - 1) {
+						odprintf("parse: sender overflowed buffer waiting for '\\n'");
+						parse_buf[0] = 0;
+						parse_pos++;
+					/* ignore */
+					} else if (parse_pos > sizeof(parse_buf)/sizeof(char) - 1) {
+
+					/* append to buffer */
+					} else {
+						parse_buf[parse_pos++] = recv_buf[i];
+						parse_buf[parse_pos] = 0;
+					}
+				}
+			}
 		}
 	}
 }
@@ -143,7 +198,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc < 2 || argc > 3) {
 		odprintf("Usage: %s <ip> [port]", argv[0]);
-		MessageBox(NULL, "Usage: temperhum.exe <ip> [port]", TITLE, MB_OK|MB_ICONERROR);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <ip> [port]", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 

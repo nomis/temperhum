@@ -34,3 +34,17 @@ void odprintf(const char *fmt, ...) {
 			OutputDebugString(buf);
 }
 
+void mbprintf(const char *title, int flags, const char *fmt, ...) {
+		char buf[4096] = {};
+		int ret;
+		va_list args;
+
+		va_start(args, fmt);
+		ret = vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+
+		if (ret < 0)
+			MessageBox(NULL, "Error in mbprintf()", title, flags);
+		else
+			MessageBox(NULL, buf, title, flags);
+}

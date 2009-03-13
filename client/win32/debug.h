@@ -16,3 +16,4 @@
  */
 
 void odprintf(const char *fmt, ...);
+void mbprintf(const char *title, int flags, const char *fmt, ...);
