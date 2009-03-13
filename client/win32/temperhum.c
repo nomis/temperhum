@@ -249,6 +249,8 @@ void temperhum_run(char *node, char *service) {
 	if (addrs_res != NULL)
 		freeaddrinfo(addrs_res);
 #endif
+
+	WSACleanup();
 }
 
 int main(int argc, char *argv[]) {
