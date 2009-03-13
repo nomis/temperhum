@@ -1,0 +1,4 @@
+#define digit_dash_width 4
+#define digit_dash_height 7
+static char digit_dash_bits[] = {
+  0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, };
