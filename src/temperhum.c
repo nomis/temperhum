@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 		struct sht1x_readings readings = sht1x_getreadings(status.low_resolution);
 		struct timespec tp;
 		clock_gettime(CLOCK_REALTIME, &tp);
-		printf("%lu.%09lu; T %6.2f℃ / RH %6.2f%% / DP %6.2f℃\n", tp.tv_sec, tp.tv_nsec, readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
+		printf("%lu.%09lu; T %6.2lf℃ / RH %6.2lf%% / DP %6.2lf℃\n", tp.tv_sec, tp.tv_nsec, readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
 		temperhum_rrd_update(rrdfile, tp.tv_sec, readings);
 	}
 
