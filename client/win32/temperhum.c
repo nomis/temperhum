@@ -21,19 +21,28 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
+#include "config.h"
 #include "debug.h"
 #include "temperhum.h"
 #include "tray.h"
 
-void temperhum_run(char *ip, unsigned short port) {
+static int running = 1;
+
+void temperhum_run(char *node, char *service) {
 	WSADATA wsaData;
+#if HAVE_GETADDRINFO
+	struct addrinfo hints;
+	struct addrinfo *addrs_res = NULL;
+	struct addrinfo *addrs_cur = NULL;
+#else
 	struct sockaddr_in sa4;
 	struct sockaddr_in6 sa6;
-	struct sockaddr *sa = NULL;
 	int sa4_len = sizeof(sa4);
 	int sa6_len = sizeof(sa6);
-	int sa_len = 0;
+#endif
 	int family = AF_UNSPEC;
+	struct sockaddr *sa = NULL;
+	int sa_len = 0;
 	int s = -1;
 	long ret;
 	struct tray_status status;
@@ -41,34 +50,48 @@ void temperhum_run(char *ip, unsigned short port) {
 	char parse_buf[128];
 	unsigned int parse_pos = 0;
 
-	odprintf("ip=%s", ip);
-	odprintf("port=%d", port);
+	odprintf("node=%s", node);
+	odprintf("service=%s", service);
 
 	ret = WSAStartup(MAKEWORD(2,0), &wsaData);
 	if (ret != 0) {
 		odprintf("WSAStartup: %d", ret);
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock2 startup failed (%d)");
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock 2.0 startup failed (%d)");
 		exit(EXIT_FAILURE);
 	}
 
-	/* TODO use getaddrinfo */
-	ret = WSAStringToAddress(ip, AF_INET, NULL, (LPSOCKADDR)&sa4, &sa4_len);
+#if HAVE_GETADDRINFO
+	hints.ai_flags = 0;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+
+	ret = getaddrinfo(node, service, &hints, &addrs_res);
+	odprintf("getaddrinfo: %d", ret);
+	if (ret != 0) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to resolve node \"%s\" service \"%s\"", node, service);
+		exit(EXIT_FAILURE);
+	}
+
+	addrs_cur = addrs_res;
+#else
+	ret = WSAStringToAddress(node, AF_INET, NULL, (LPSOCKADDR)&sa4, &sa4_len);
 	odprintf("WSAStringToAddress[IPv4]: %d", ret);
 	if (ret == 0) {
 		family = AF_INET;
 		sa4.sin_family = AF_INET;
-		sa4.sin_port = htons(port);
+		sa4.sin_port = htons(strtoul(service, NULL, 10));
 
 		sa = (struct sockaddr*)&sa4;
 		sa_len = sa4_len;
 	}
 
-	ret = WSAStringToAddress(ip, AF_INET6, NULL, (LPSOCKADDR)&sa6, &sa6_len);
+	ret = WSAStringToAddress(node, AF_INET6, NULL, (LPSOCKADDR)&sa6, &sa6_len);
 	odprintf("WSAStringToAddress[IPv6]: %d", ret);
 	if (ret == 0) {
 		family = AF_INET6;
 		sa6.sin6_family = AF_INET6;
-		sa6.sin6_port = htons(port);
+		sa6.sin6_port = htons(strtoul(service, NULL, 10));
 
 		sa = (struct sockaddr*)&sa6;
 		sa_len = sa6_len;
@@ -76,15 +99,43 @@ void temperhum_run(char *ip, unsigned short port) {
 
 	odprintf("family=%d", family);
 	if (family == AF_UNSPEC) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Invalid IP \"%s\" specified", ip);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Invalid IP \"%s\" specified", node);
 		exit(EXIT_FAILURE);
 	}
+#endif
 
 	status.conn = NOT_CONNECTED;
 	update_tray(&status);
 
-	while (1) {
+	while (running) {
 		if (status.conn != CONNECTED) {
+#if HAVE_GETADDRINFO
+			char hbuf[NI_MAXHOST];
+			char sbuf[NI_MAXSERV];
+
+			if (addrs_res == NULL || addrs_cur == NULL) {
+				ret = getaddrinfo(node, service, &hints, &addrs_res);
+				odprintf("getaddrinfo: %d", ret);
+				if (ret != 0) {
+					Sleep(5000);
+					continue;
+				}
+
+				addrs_cur = addrs_res;
+			}
+
+			family = addrs_cur->ai_family;
+			sa = addrs_cur->ai_addr;
+			sa_len = addrs_cur->ai_addrlen;
+
+			ret = getnameinfo(sa, sa_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST|NI_NUMERICSERV);
+			if (ret == 0) 
+				odprintf("trying to connect to node \"%s\" service \"%s\"", hbuf, sbuf);
+			addrs_cur = addrs_cur->ai_next;
+#else
+			odprintf("trying to connect to node \"%s\" service \"%s\"", node, service);
+#endif
+
 			SetLastError(0);
 			s = socket(family, SOCK_STREAM, IPPROTO_TCP);
 			odprintf("socket: %d (%d)", s, GetLastError());
@@ -114,6 +165,11 @@ void temperhum_run(char *ip, unsigned short port) {
 					status.relative_humidity = NAN;
 					status.dew_point = NAN;
 					update_tray(&status);
+
+#if HAVE_GETADDR_INFO
+					freeaddrinfo(addrs_res);
+					addrs_res = NULL;
+#endif
 				} else {
 					status.conn = NOT_CONNECTED;
 					update_tray(&status);
@@ -185,11 +241,19 @@ void temperhum_run(char *ip, unsigned short port) {
 			}
 		}
 	}
+
+	if (s != -1)
+		closesocket(s);
+
+#if HAVE_GETADDRINFO
+	if (addrs_res != NULL)
+		freeaddrinfo(addrs_res);
+#endif
 }
 
 int main(int argc, char *argv[]) {
-	char *ip;
-	unsigned short port = 21576;
+	char *node;
+	char *service = "21576";
 	int i;
 
 	odprintf("argc=%d", argc);
@@ -197,15 +261,20 @@ int main(int argc, char *argv[]) {
 		odprintf("argv[%d]=%s", i, argv[i]);
 
 	if (argc < 2 || argc > 3) {
+#if HAVE_GETADDRINFO
+		odprintf("Usage: %s <node (host/ip)> [service (port)]", argv[0]);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <node (host/ip)> [service (port)]", argv[0]);
+#else
 		odprintf("Usage: %s <ip> [port]", argv[0]);
 		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <ip> [port]", argv[0]);
+#endif
 		exit(EXIT_FAILURE);
 	}
 
-	ip = argv[1];
+	node = argv[1];
 	if (argc == 3)
-		port = strtoul(argv[2], NULL, 10);
+		service = argv[2];
 
-	temperhum_run(ip, port);
+	temperhum_run(node, service);
 	exit(EXIT_SUCCESS);
 }
