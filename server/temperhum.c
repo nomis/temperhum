@@ -192,7 +192,7 @@ listen_failed:
 
 		/* Broadcast to clients */
 		if (clients != NULL && run) {
-			struct timeval no_timeout;
+			struct timeval immediate;
 			struct th_socket *last_c;
 			time_t rrd_start = now.tv_sec - 6;
 			time_t rrd_end = now.tv_sec - 1;
@@ -295,10 +295,10 @@ listen_failed:
 				current_c = current_c->next;
 			}
 
-			no_timeout.tv_sec = 0;
-			no_timeout.tv_usec = 0;
+			immediate.tv_sec = 0;
+			immediate.tv_usec = 0;
 
-			ret = select(max + 1, &r, &w, &e, &no_timeout);
+			ret = select(max + 1, &r, &w, &e, &immediate);
 			if (ret == -1) {
 				perror("select");
 				status = EXIT_FAILURE;
@@ -373,20 +373,25 @@ listen_failed:
 			goto closeall;
 		}
 
-		timeout.tv_sec = 0;
-		if (now.tv_sec < last.tv_sec || (now.tv_sec == last.tv_sec && now.tv_nsec < last.tv_nsec) || (now.tv_sec - last.tv_sec) > 1) {
-			timeout.tv_usec = 0;
-		} else if (now.tv_sec - last.tv_sec == 0) {
-			timeout.tv_usec = (1000000000 - (now.tv_nsec - last.tv_nsec))/1000;
-		} else if (now.tv_sec - last.tv_sec == 1) {
-			timeout.tv_usec = (1000000000 - ((now.tv_nsec + 1000000000) - last.tv_nsec))/1000;
-			if (timeout.tv_usec < 0)
+		if (clients != NULL) {
+			timeout.tv_sec = 0;
+			if (now.tv_sec < last.tv_sec || (now.tv_sec == last.tv_sec && now.tv_nsec < last.tv_nsec) || (now.tv_sec - last.tv_sec) > 1) {
 				timeout.tv_usec = 0;
+			} else if (now.tv_sec - last.tv_sec == 0) {
+				timeout.tv_usec = (1000000000 - (now.tv_nsec - last.tv_nsec))/1000;
+			} else if (now.tv_sec - last.tv_sec == 1) {
+				timeout.tv_usec = (1000000000 - ((now.tv_nsec + 1000000000) - last.tv_nsec))/1000;
+				if (timeout.tv_usec < 0)
+					timeout.tv_usec = 0;
+			} else {
+				timeout.tv_usec = 0;
+			}
+
+			ret = select(max + 1, &r, &w, &e, &timeout);
 		} else {
-			timeout.tv_usec = 0;
+			ret = select(max + 1, &r, &w, &e, NULL);
 		}
 
-		ret = select(max + 1, &r, &w, &e, &timeout);
 		if (ret == -1) {
 			perror("select");
 			status = EXIT_FAILURE;
