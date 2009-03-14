@@ -71,15 +71,14 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 	odprintf("getaddrinfo: %d (%d)", ret, err);
 	if (ret != 0) {
 		ret = snprintf(status.error, sizeof(status.error), "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
-		if (ret < 0)
-			status.error[0] = 0;
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
+		return EXIT_FAILURE;
 	}
 
 	if (addrs_res == NULL) {
 		odprintf("no results");
-		ret = snprintf(status.error, sizeof(status.error), "No results resolving node \"%s\" service \"%s\"", node, service);
-		if (ret < 0)
-			status.error[0] = 0;
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "No results resolving node \"%s\" service \"%s\"", node, service);
+		return EXIT_FAILURE;
 	}
 
 	addrs_cur = addrs_res;
