@@ -24,18 +24,18 @@
 
 enum sht1x_type { TEMP, HUMIDITY };
 
-double sht1x_sample(struct sht1x_readings readings, int low_resolution, enum sht1x_type type) {
+double sht1x_sample(struct sht1x_device *dev, struct sht1x_readings readings, int low_resolution, enum sht1x_type type) {
 	unsigned int resp;
 	int err;
 
 	if (type == TEMP) {
-		err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_M_TEMP);
+		err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_M_TEMP);
 	} else if (type == HUMIDITY) {
 		/* Don't bother reading humidity with temperature */
 		if (isnan(readings.temperature_celsius))
 			return NAN;
 
-		err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_M_RH);
+		err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_M_RH);
 	} else {
 		return NAN;
 	}
@@ -43,7 +43,7 @@ double sht1x_sample(struct sht1x_readings readings, int low_resolution, enum sht
 	if (err)
 		return NAN;
 
-	resp = sht1x_read(2);
+	resp = sht1x_read(dev, 2);
 //	if ((resp & 0xFF000000) != 0)
 //		return NAN;
 
@@ -104,15 +104,15 @@ double sht1x_sample(struct sht1x_readings readings, int low_resolution, enum sht
 	}
 }
 
-struct sht1x_readings sht1x_getreadings(int low_resolution) {
+struct sht1x_readings sht1x_getreadings(struct sht1x_device *dev, int low_resolution) {
 	struct sht1x_readings readings = {
 		.temperature_celsius = NAN,
 		.relative_humidity = NAN,
 		.dew_point = NAN
 	};
 
-	readings.temperature_celsius = sht1x_sample(readings, low_resolution, TEMP);
-	readings.relative_humidity = sht1x_sample(readings, low_resolution, HUMIDITY);
+	readings.temperature_celsius = sht1x_sample(dev, readings, low_resolution, TEMP);
+	readings.relative_humidity = sht1x_sample(dev, readings, low_resolution, HUMIDITY);
 
 	/* Calculate de point */
 	if (!isnan(readings.temperature_celsius) && !isnan(readings.relative_humidity)) {

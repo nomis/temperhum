@@ -24,4 +24,4 @@ struct sht1x_readings {
 	double dew_point;
 };
 
-struct sht1x_readings sht1x_getreadings(int low_resolution);
+struct sht1x_readings sht1x_getreadings(struct sht1x_device *dev, int low_resolution);

@@ -48,6 +48,17 @@ struct sht1x_status {
 	unsigned int low_resolution;
 };
 
+struct sht1x_device {
+	char name[4096];
+	char rrdfile[4096];
+	unsigned char crc_init;
+	unsigned char crc;
+	int fd;
+	struct sht1x_status status;
+	struct sht1x_device *next;
+};
+
+
 #ifdef COMMS_C
 
 /* Timing */
@@ -56,29 +67,29 @@ void sht1x_startup_delay(void);
 void sht1x_alarm(int signum);
 
 /* Input */
-int sht1x_in(void);
-int sht1x_in_wait(void);
+int sht1x_in(struct sht1x_device *dev);
+int sht1x_in_wait(struct sht1x_device *dev);
 
 /* Output */
-void sht1x_sck(int v);
-void sht1x_out(int v);
+void sht1x_sck(struct sht1x_device *dev, int v);
+void sht1x_out(struct sht1x_device *dev, int v);
 
 /* Comms */
-void sht1x_trans_start(int part1, int part2);
-void sht1x_conn_reset(void);
+void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2);
+void sht1x_conn_reset(struct sht1x_device *dev);
 
 #endif
 
 /* Comms */
-unsigned int sht1x_read(int bytes);
-int sht1x_write(unsigned char data);
+unsigned int sht1x_read(struct sht1x_device *dev, int bytes);
+int sht1x_write(struct sht1x_device *dev, unsigned char data);
 
 /* Control */
-int sht1x_command(int addr, int cmd);
-int sht1x_device_reset(void);
+int sht1x_command(struct sht1x_device *dev, int addr, int cmd);
+int sht1x_device_reset(struct sht1x_device *dev);
 
 /* Device */
-void sht1x_open(char *dev);
-struct sht1x_status sht1x_read_status(void);
-int sht1x_write_status(struct sht1x_status status);
-void sht1x_close(void);
+void sht1x_open(struct sht1x_device *dev);
+struct sht1x_status sht1x_read_status(struct sht1x_device *dev);
+int sht1x_write_status(struct sht1x_device *dev, struct sht1x_status status);
+void sht1x_close(struct sht1x_device *dev);

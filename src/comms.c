@@ -36,11 +36,7 @@
 #define COMMS_C
 #include "comms.h"
 
-static int fd = -1;
 static sigjmp_buf saved;
-
-static unsigned char crc_init = SHT1X_CRC_INIT;
-static unsigned char crc;
 
 static unsigned char crc_table[256] = {
 	0x00, 0x31, 0x62, 0x53, 0xc4, 0xf5, 0xa6, 0x97, 0xb9, 0x88, 0xdb, 0xea, 0x7d, 0x4c, 0x1f, 0x2e,
@@ -94,12 +90,12 @@ void sht1x_alarm(int signum) {
 }
 
 /* Input */
-int sht1x_in(void) {
+int sht1x_in(struct sht1x_device *dev) {
 	int status = 0;
 
 	sht1x_delay();
 
-	if (ioctl(fd, TIOCMGET, &status) < 0) {
+	if (ioctl(dev->fd, TIOCMGET, &status) < 0) {
 		perror("TIOCMGET/CTS");
 		exit(EXIT_FAILURE);
 	}
@@ -107,9 +103,9 @@ int sht1x_in(void) {
 	return (status & TIOCM_CTS) ? 1 : 0;
 }
 
-int sht1x_in_wait(void) {
+int sht1x_in_wait(struct sht1x_device *dev) {
 	/* Check for ready state */
-	if (sht1x_in()) {
+	if (sht1x_in(dev)) {
 		struct itimerval timeout;
 		timeout.it_interval.tv_sec = 0;
 		timeout.it_interval.tv_usec = 0;
@@ -126,7 +122,7 @@ int sht1x_in_wait(void) {
 			}
 
 			/* Wait for activity on CTS */
-			ioctl(fd, TIOCMIWAIT, TIOCM_CTS);
+			ioctl(dev->fd, TIOCMIWAIT, TIOCM_CTS);
 	
 			/* Stop timer */
 			timeout.it_value.tv_sec = 0;
@@ -140,16 +136,16 @@ int sht1x_in_wait(void) {
 		}
 
 		/* Check for ready state */
-		return sht1x_in();
+		return sht1x_in(dev);
 	}
 	return 0;
 }
 
 /* Output */
-void sht1x_sck(int v) {
+void sht1x_sck(struct sht1x_device *dev, int v) {
 	int status = 0;
 
-	if (ioctl(fd, TIOCMGET, &status) < 0) {
+	if (ioctl(dev->fd, TIOCMGET, &status) < 0) {
 		perror("TIOCMGET/DTR");
 		exit(EXIT_FAILURE);
 	}
@@ -159,7 +155,7 @@ void sht1x_sck(int v) {
 	else
 		status &= ~TIOCM_DTR;
 
-	if (ioctl(fd, TIOCMSET, &status) < 0) {
+	if (ioctl(dev->fd, TIOCMSET, &status) < 0) {
 		perror("TIOCMSET/DTR");
 		exit(EXIT_FAILURE);
 	}
@@ -167,10 +163,10 @@ void sht1x_sck(int v) {
 	sht1x_delay();
 }
 
-void sht1x_out(int v) {
+void sht1x_out(struct sht1x_device *dev, int v) {
 	int status = 0;
 
-	if (ioctl(fd, TIOCMGET, &status) < 0) {
+	if (ioctl(dev->fd, TIOCMGET, &status) < 0) {
 		perror("TIOCMGET/RTS");
 		exit(EXIT_FAILURE);
 	}
@@ -180,7 +176,7 @@ void sht1x_out(int v) {
 	else
 		status &= ~TIOCM_RTS;
 
-	if (ioctl(fd, TIOCMSET, &status) < 0) {
+	if (ioctl(dev->fd, TIOCMSET, &status) < 0) {
 		perror("TIOCMSET/RTS");
 		exit(EXIT_FAILURE);
 	}
@@ -189,44 +185,44 @@ void sht1x_out(int v) {
 }
 
 /* Comms */
-void sht1x_conn_reset(void) {
+void sht1x_conn_reset(struct sht1x_device *dev) {
 	int i;
 
 	/* Raise DATA */
-	sht1x_out(1);
+	sht1x_out(dev, 1);
 
 	/* Lower SCK */
-	sht1x_sck(0);
+	sht1x_sck(dev, 0);
 
 	/* Toggle SCK 9+ times */
 	for (i = 0; i < 9; i++) {
-		sht1x_sck(1);
-		sht1x_sck(0);
+		sht1x_sck(dev, 1);
+		sht1x_sck(dev, 0);
 	}
 }
 
-void sht1x_trans_start(int part1, int part2) {
+void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2) {
 	if (part1) {
 		/* Raise DATA */
-		sht1x_out(1);
+		sht1x_out(dev, 1);
 
 		/* Raise SCK */
-		sht1x_sck(1);
+		sht1x_sck(dev, 1);
 
 		/* Lower data */
-		sht1x_out(0);
+		sht1x_out(dev, 0);
 
 		/* Toggle SCK */
-		sht1x_sck(0);
+		sht1x_sck(dev, 0);
 	}
 	if (part2) {
-		sht1x_sck(1);
+		sht1x_sck(dev, 1);
 
 		/* Raise data */
-		sht1x_out(1);
+		sht1x_out(dev, 1);
 
 		/* Lower SCK */
-		sht1x_sck(0);
+		sht1x_sck(dev, 0);
 	}
 }
 
@@ -236,7 +232,7 @@ void sht1x_trans_start(int part1, int part2) {
  *   --- = Value MSB
  *   LSB = Value LSB
  */
-unsigned int sht1x_read(int bytes) {
+unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 	unsigned int v = 0xFF000000;
 	int bits;
 
@@ -246,46 +242,46 @@ unsigned int sht1x_read(int bytes) {
 	bits = (bytes + 1) * 8;
 
 	/* Raise DATA waiting for response */
-	sht1x_out(1);
+	sht1x_out(dev, 1);
 
 	/* Wait for response */
-	if (sht1x_in_wait())
+	if (sht1x_in_wait(dev))
 		return v;
 
 	/* Read MSB, LSB and checksum */
 	do {
 		/* Raise DATA */
-		sht1x_out(1);
+		sht1x_out(dev, 1);
 
 		/* Toggle SCK */
-		sht1x_sck(1);
-		sht1x_sck(0);
+		sht1x_sck(dev, 1);
+		sht1x_sck(dev, 0);
 
 		/* Read bit */
 		bits--;
-		v |= sht1x_in() << (bits - 1);
+		v |= sht1x_in(dev) << (bits - 1);
 
 		/* Write ACK after each byte */
 		if ((bits & 7) == 0) {
 			if (bits > 0) {
 				/* Lower DATA */
-				sht1x_out(0);
+				sht1x_out(dev, 0);
 			} else {
 				/* Raise DATA */
-				sht1x_out(0);
+				sht1x_out(dev, 0);
 			}
 
 			/* Toggle SCK */
-			sht1x_sck(1);
-			sht1x_sck(0);
+			sht1x_sck(dev, 1);
+			sht1x_sck(dev, 0);
 		}
 	} while (bits > 0);
 
 	/* Calculate CRC */
 	if (bytes >= 2)
-		crc = crc_table[crc ^ (v >> 16 & 0x000000FF)];
+		dev->crc = crc_table[dev->crc ^ (v >> 16 & 0x000000FF)];
 	if (bytes >= 1)
-		crc = crc_table[crc ^ (v >> 8 & 0x000000FF)];
+		dev->crc = crc_table[dev->crc ^ (v >> 8 & 0x000000FF)];
 
 //printf("%08x", v);
 
@@ -300,10 +296,10 @@ unsigned int sht1x_read(int bytes) {
 		| (v << 5 & 0x40)
 		| (v << 7 & 0x80);
 
-//printf("/%02x/%02x", v & 0xFF, crc);
+//printf("/%02x/%02x", v & 0xFF, dev->crc);
 
 	/* Checksum OK */
-	if ((v & 0xFE) == (crc & 0xFE))
+	if ((v & 0xFE) == (dev->crc & 0xFE))
 		v = (v & 0x00FFFFFF);
 
 	/* Move checksum to before MSB/LSB */
@@ -312,58 +308,58 @@ unsigned int sht1x_read(int bytes) {
 	return v;
 }
 
-int sht1x_write(unsigned char data) {
+int sht1x_write(struct sht1x_device *dev, unsigned char data) {
 	int err;
 	int bits = 8;
 
 	/* Calculate CRC */
-	crc = crc_table[crc ^ data];
+	dev->crc = crc_table[dev->crc ^ data];
 
 	while (bits-- > 0) {
 		/* Set DATA */
-		sht1x_out(data >> bits & 1);
+		sht1x_out(dev, data >> bits & 1);
 
 		/* Toggle SCK */
-		sht1x_sck(1);
-		sht1x_sck(0);
+		sht1x_sck(dev, 1);
+		sht1x_sck(dev, 0);
 	}
 
 	/* Raise DATA for ACK */
-	sht1x_out(1);
+	sht1x_out(dev, 1);
 
 	/* Raise SCK for ACK */
-	sht1x_sck(1);
+	sht1x_sck(dev, 1);
 
 	/* Read ACK */
-	err = sht1x_in();
+	err = sht1x_in(dev);
 
 	/* Lower SCK */
-	sht1x_sck(0);
+	sht1x_sck(dev, 0);
 
 	return err;
 }
 
 /* Control */
-int sht1x_command(int addr, int cmd) {
+int sht1x_command(struct sht1x_device *dev, int addr, int cmd) {
 	/* Start transmission */
-	sht1x_trans_start(1, addr == SHT1X_ADDR ? 1 : 0);
+	sht1x_trans_start(dev, 1, addr == SHT1X_ADDR ? 1 : 0);
 
 	/* Reset CRC */
-	crc = crc_init;
-	crc = (crc >> 7 & 0x01)
-		| (crc >> 5 & 0x02)
-		| (crc >> 3 & 0x04)
-		| (crc >> 1 & 0x08)
-		| (crc << 1 & 0x10)
-		| (crc << 3 & 0x20)
-		| (crc << 5 & 0x40)
-		| (crc << 7 & 0x80);
+	dev->crc = dev->crc_init;
+	dev->crc = (dev->crc >> 7 & 0x01)
+		| (dev->crc >> 5 & 0x02)
+		| (dev->crc >> 3 & 0x04)
+		| (dev->crc >> 1 & 0x08)
+		| (dev->crc << 1 & 0x10)
+		| (dev->crc << 3 & 0x20)
+		| (dev->crc << 5 & 0x40)
+		| (dev->crc << 7 & 0x80);
 
 	/* Write command and read ACK */
-	return sht1x_write((addr << 5 & 0xE0) | (cmd & 0x1F));
+	return sht1x_write(dev, (addr << 5 & 0xE0) | (cmd & 0x1F));
 }
 
-int sht1x_device_reset(void) {
+int sht1x_device_reset(struct sht1x_device *dev) {
 	int err;
 
 	/* Assumption: it'll take more than 11ms
@@ -371,13 +367,13 @@ int sht1x_device_reset(void) {
      * Sleep State already. */
 
 	/* Reset comms */
-	sht1x_conn_reset();
+	sht1x_conn_reset(dev);
 
 	/* Soft reset */
-	err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_S_RESET);
+	err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_S_RESET);
 
 	/* Status register has been reset */
-	crc_init = SHT1X_CRC_INIT;
+	dev->crc_init = SHT1X_CRC_INIT;
 
 	/* Wait */
 	sht1x_startup_delay();
@@ -385,16 +381,16 @@ int sht1x_device_reset(void) {
 	return err;
 }
 
-struct sht1x_status sht1x_read_status(void) {
+struct sht1x_status sht1x_read_status(struct sht1x_device *dev) {
 	struct sht1x_status status = { 0, 0, 0, 0, 0 };
 	unsigned int resp;
 	int err;
 
-	err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_R_SR);
+	err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_R_SR);
 	if (err)
         return status;
 
-    resp = sht1x_read(1);
+    resp = sht1x_read(dev, 1);
 	if ((resp & 0xFF000000) == 0) {
 		status.valid = 1;
 
@@ -407,11 +403,11 @@ struct sht1x_status sht1x_read_status(void) {
 	return status;
 }
 
-int sht1x_write_status(struct sht1x_status status) {
+int sht1x_write_status(struct sht1x_device *dev, struct sht1x_status status) {
 	unsigned char req = 0;
 	int err;
 
-	err = sht1x_command(SHT1X_ADDR, SHT1X_CMD_W_SR);
+	err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_W_SR);
 	if (err)
         return err;
 
@@ -423,11 +419,11 @@ int sht1x_write_status(struct sht1x_status status) {
 	if (status.low_resolution)
 		req |= 1;
 
-	crc_init = req & 0x0F;
+	dev->crc_init = req & 0x0F;
 
-	err = sht1x_write(req);
+	err = sht1x_write(dev, req);
 	if (err)
-		sht1x_device_reset();
+		sht1x_device_reset(dev);
 	return err;
 }
 
@@ -436,26 +432,26 @@ int ttyUSB(const struct dirent *entry) {
 }
 
 /* Device */
-void sht1x_open(char *dev) {
+void sht1x_open(struct sht1x_device *dev) {
 	struct termios tio;
 	char path[4096];
 	struct dirent **namelist;
 	int names, i;
 
-	snprintf(path, 4096, "/sys/bus/usb/devices/%s:1.0", dev);
+	snprintf(path, 4096, "/sys/bus/usb/devices/%s:1.0", dev->name);
 	names = scandir(path, &namelist, ttyUSB, alphasort);
 	if (names == -1) {
 		perror(path);
 		exit(EXIT_FAILURE);
 	}
 	if (names == 0) {
-		fprintf(stderr, "No ttyUSB devices found for %s\n", dev);
+		fprintf(stderr, "No ttyUSB devices found for %s\n", dev->name);
 		exit(EXIT_FAILURE);
 	}
 
 	snprintf(path, 4096, "/dev/%s", namelist[0]->d_name);
-	fd = open(path, O_RDWR | O_NOCTTY);
-	if (fd == -1) {
+	dev->fd = open(path, O_RDWR | O_NOCTTY);
+	if (dev->fd == -1) {
 		perror(path);
 		exit(EXIT_FAILURE);
 	}
@@ -464,7 +460,7 @@ void sht1x_open(char *dev) {
 		free(namelist[i]);
 	free(namelist);
 
-	if (tcgetattr(fd, &tio) != 0) {
+	if (tcgetattr(dev->fd, &tio) != 0) {
 		perror("tcgetattr");
 		exit(EXIT_FAILURE);
 	}
@@ -487,22 +483,22 @@ void sht1x_open(char *dev) {
 	tio.c_cc[VTIME] = 1;
 	tio.c_cc[VMIN] = 1;
 
-	if (tcflush(fd, TCIFLUSH) != 0) {
+	if (tcflush(dev->fd, TCIFLUSH) != 0) {
 		perror("tcflush");
 		exit(EXIT_FAILURE);
 	}
 
-	if (tcsetattr(fd, TCSANOW, &tio) != 0) {
+	if (tcsetattr(dev->fd, TCSANOW, &tio) != 0) {
 		perror("tcsetattr");
 		exit(EXIT_FAILURE);
 	}
 }
 
-void sht1x_close(void) {
-	if (close(fd) != 0) {
+void sht1x_close(struct sht1x_device *dev) {
+	if (close(dev->fd) != 0) {
 		perror("close");
 		exit(EXIT_FAILURE);
 	}
 
-	fd = -1;
+	dev->fd = -1;
 }

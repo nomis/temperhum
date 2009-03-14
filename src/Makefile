@@ -11,8 +11,14 @@ clean:
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+temperhum.c: readings.h comms.h
+readings.c: readings.h comms.h
+comms.c: comms.h
+
 temperhum: $(TEMPERHUM_OBJS) Makefile
 	$(CC) $(CFLAGS) -lm -lrt -lrrd -o $@ $(TEMPERHUM_OBJS)
+
+eeprom_dump.c: comms.h
 
 eeprom_dump: $(EEPROM_DUMP_OBJS) Makefile
 	$(CC) $(CFLAGS) -lrt -o $@ $(EEPROM_DUMP_OBJS)

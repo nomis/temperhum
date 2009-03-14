@@ -28,7 +28,7 @@
 #include "comms.h"
 #include "readings.h"
 
-void temperhum_rrd_open(char *fname) {
+void temperhum_rrd_create(char *fname) {
 	struct stat buf;
 
 	if (stat(fname, &buf) != 0) {
@@ -105,63 +105,93 @@ void temperhum_rrd_update(char *fname, time_t tv_sec, struct sht1x_readings read
 }
 
 int main(int argc, char *argv[]) {
-	char rrdfile[4096];
-	struct sht1x_status status;
-	int err;
-	(void)argc;
+	struct sht1x_device *devices = NULL;
+	struct sht1x_device *current = NULL;
+	int err, status, i;
 
-	if (argc != 2) {
-		printf("Usage: %s 1-2.3.4\n", argv[0]);
-		exit(EXIT_FAILURE);
+	if (argc < 2) {
+		printf("Usage: %s 1-2.3.4 [1-2.3.5] [2-6.1]\n", argv[0]);
+		status = EXIT_FAILURE;
+		goto done;
 	}
 
-	snprintf(rrdfile, 4096, "%s.rrd", argv[1]);
+	for (i = 1; i < argc; i++) {
+		current = malloc(sizeof(struct sht1x_device));
+		if (current == NULL) {
+			status = EXIT_FAILURE;
+			goto closeall;
+		}
 
-	sht1x_open(argv[1]);
-	temperhum_rrd_open(rrdfile);
+		current->next = devices;
+		devices = current;
 
-	err = sht1x_device_reset();
-	if (err) {
-		fprintf(stderr, "Error resetting device\n");
-		exit(EXIT_FAILURE);
-	}
+		strncpy(current->name, argv[i], sizeof(current->name));
+		snprintf(current->rrdfile, sizeof(current->rrdfile), "%s.rrd", argv[i]);
 
-	status = sht1x_read_status();
-	if (!status.valid) {
-		fprintf(stderr, "Status read failed\n");
-		sht1x_close();
-		exit(EXIT_FAILURE);
-	} else {
-		printf("; Status {"
-			"Battery: %s, "
-			"Heater: %s, "
-			"Reload: %s, "
-			"Resolution: %s }\n",
-			status.low_battery == 0 ? "OK" : "LOW",
-			status.heater == 0 ? "OFF" : "ON",
-			status.no_reload == 0 ? "YES" : "NO",
-			status.low_resolution == 0 ? "HIGH" : "LOW");
+		sht1x_open(current);
+		temperhum_rrd_create(current->rrdfile);
 
-		if (status.low_resolution || status.heater) {
-			status.low_resolution = 0;
-			status.heater = 0;
+		err = sht1x_device_reset(current);
+		if (err) {
+			fprintf(stderr, "Error resetting device %s\n", current->name);
+			status = EXIT_FAILURE;
+			goto closeall;
+		}
 
-			if (sht1x_write_status(status)) {
-				fprintf(stderr, "Status write failed\n");
-				sht1x_close();
-				exit(EXIT_FAILURE);
+		current->status = sht1x_read_status(current);
+		if (!current->status.valid) {
+			fprintf(stderr, "Status read failed for %s\n", current->name);
+			status = EXIT_FAILURE;
+			goto closeall;
+		} else {
+			printf("%s; Status {"
+				"Battery: %s, "
+				"Heater: %s, "
+				"Reload: %s, "
+				"Resolution: %s }\n",
+				current->name,
+				current->status.low_battery == 0 ? "OK" : "LOW",
+				current->status.heater == 0 ? "OFF" : "ON",
+				current->status.no_reload == 0 ? "YES" : "NO",
+				current->status.low_resolution == 0 ? "HIGH" : "LOW");
+
+			if (current->status.low_resolution || current->status.heater) {
+				current->status.low_resolution = 0;
+				current->status.heater = 0;
+
+				if (sht1x_write_status(current, current->status)) {
+					fprintf(stderr, "Status write failed for %s\n", current->name);
+					status = EXIT_FAILURE;
+					goto closeall;
+				}
 			}
 		}
 	}
 
 	while(1) {
-		struct sht1x_readings readings = sht1x_getreadings(status.low_resolution);
+		struct sht1x_readings readings;
 		struct timespec tp;
+
+		if (current == NULL)
+			current = devices;
+
+		readings = sht1x_getreadings(current, current->status.low_resolution);
 		clock_gettime(CLOCK_REALTIME, &tp);
-		printf("%lu.%09lu; T %6.2lf℃ / RH %6.2lf%% / DP %6.2lf℃\n", tp.tv_sec, tp.tv_nsec, readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
-		temperhum_rrd_update(rrdfile, tp.tv_sec, readings);
+		printf("%lu.%09lu/%10s; T %6.2lf℃ / RH %6.2lf%% / DP %6.2lf℃\n", tp.tv_sec, tp.tv_nsec, current->name, readings.temperature_celsius, readings.relative_humidity, readings.dew_point);
+		temperhum_rrd_update(current->rrdfile, tp.tv_sec, readings);
+
+		current = current->next;
+	}
+	status = EXIT_SUCCESS;
+
+closeall:
+	while (devices != NULL) {
+		current = devices;
+		sht1x_close(current);
+		devices = current->next;
+		free(current);
 	}
 
-	sht1x_close();
-	exit(EXIT_SUCCESS);
+done:
+	exit(status);
 }
