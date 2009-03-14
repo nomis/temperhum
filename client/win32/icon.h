@@ -22,3 +22,4 @@
 
 void icon_blit(unsigned int fg, unsigned int bg, unsigned int cx, unsigned int fg2, unsigned int bg2, unsigned int sx, unsigned int sy, unsigned int width, unsigned int height, const unsigned char *data);
 void icon_wipe(unsigned int bg);
+void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned int sx, unsigned int sy, unsigned int width, unsigned int height);

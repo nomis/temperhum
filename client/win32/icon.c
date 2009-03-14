@@ -63,11 +63,22 @@ void icon_blit(unsigned int fg1, unsigned int bg1, unsigned int cx, unsigned int
 }
 
 void icon_wipe(unsigned int bg) {
-	unsigned int x, y;
-
 	odprintf("icon_wipe: bg=#%08x", bg);
+	icon_clear(0, 0, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT);
+}
 
-	for (x = 0; x < ICON_WIDTH; x++)
-		for (y = 0; y < ICON_HEIGHT; y++)
+void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned int sx, unsigned int sy, unsigned int width, unsigned int height) {
+	unsigned int x, y, bg;
+
+	odprintf("icon_clear: bg1=#%08x cx=%u bg2=#%08x sx=%u sy=%u width=%u height=%u", bg1, cx, bg2, sx, sy, width, height);
+
+	bg = bg1;
+
+	for (x = sx; sx < sx+width && x < ICON_WIDTH; x++) {
+		if (x == cx)
+			bg = bg2;
+
+		for (y = sy; sy < sy+height && y < ICON_HEIGHT; y++)
 			icon_set(x, y, bg);
+	}
 }
