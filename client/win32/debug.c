@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "debug.h"
+
 void odprintf(const char *fmt, ...) {
 		char buf[4096] = {};
 		int ret;

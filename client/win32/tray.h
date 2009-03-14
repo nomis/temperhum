@@ -23,9 +23,12 @@ enum conn_status {
 
 struct tray_status {
 	enum conn_status conn;
+	char error[512];
 	double temperature_celsius;
 	double relative_humidity;
 	double dew_point;
 };
 
-void update_tray(struct tray_status *status);
+void tray_add(HWND hwnd);
+void tray_update(HWND hwnd, struct tray_status *status);
+void tray_remove(void);

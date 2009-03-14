@@ -16,21 +16,85 @@
  */
 
 #include <math.h>
+#include <shlwapi.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <windows.h>
 
 #include "debug.h"
 #include "icon.h"
+#include "temperhum.h"
 #include "tray.h"
 
 #include "digits.h"
 #include "connecting.xbm"
 #include "not_connected.xbm"
 
-void update_tray(struct tray_status *status) {
-	unsigned int h_fg, h_bg, h_end, fg, bg, p, d;
+static NOTIFYICONDATA niData;
+static int tray_ok = 0;
 
-	odprintf("tray: conn=%d, temperature_celsius=%f, relative_humidity=%f, dew_point=%f",
-		status->conn, status->temperature_celsius, status->relative_humidity, status->dew_point);
+void tray_add(HWND hwnd) {
+	BOOL ret;
+	DWORD err;
+
+	odprintf("tray[add]");
+
+	if (!tray_ok) {
+		niData.cbSize = sizeof(NOTIFYICONDATA);
+		niData.hWnd = hwnd;
+		niData.uID = 1;
+		niData.uFlags = NIF_MESSAGE|NIF_TIP;
+		niData.uCallbackMessage = WM_APP;
+		niData.hIcon = NULL;
+		niData.szTip[0] = 0;
+		niData.uVersion = NOTIFYICON_VERSION;
+
+		SetLastError(0);
+		ret = Shell_NotifyIcon(NIM_ADD, &niData);
+		err = GetLastError();
+		odprintf("Shell_NotifyIcon[ADD]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
+		if (ret == TRUE)
+			tray_ok = 1;
+
+		SetLastError(0);
+		ret = Shell_NotifyIcon(NIM_SETVERSION, &niData);
+		err = GetLastError();
+		odprintf("Shell_NotifyIcon[SETVERSION]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
+		if (ret != TRUE)
+			niData.uVersion = 0;
+	}
+}
+
+void tray_remove(void) {
+	BOOL ret;
+	DWORD err;
+
+	odprintf("tray[remove]");
+
+	if (tray_ok) {
+		SetLastError(0);
+		ret = Shell_NotifyIcon(NIM_DELETE, &niData);
+		err = GetLastError();
+		odprintf("Shell_NotifyIcon[DELETE]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
+		if (ret == TRUE)
+			tray_ok = 0;
+	}
+}
+
+void tray_update(HWND hwnd, struct tray_status *status) {
+	unsigned int h_fg, h_bg, h_end, fg, bg, p, d;
+	BOOL ret;
+	DWORD err;
+
+	if (!tray_ok) {
+		tray_add(hwnd);
+
+		if (!tray_ok)
+			return;
+	}
+
+	odprintf("tray[update]: conn=%d error=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
+		status->conn, status->error, status->temperature_celsius, status->relative_humidity, status->dew_point);
 
 	fg = 0;
 	bg = ~0;
@@ -45,6 +109,13 @@ void update_tray(struct tray_status *status) {
 			icon_wipe(bg);
 
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, not_connected_width, not_connected_height, not_connected_bits);
+
+		if (status->error[0] != 0)
+			ret = snprintf(niData.szTip, sizeof(niData.szTip), "Not Connected: %s", status->error);
+		else
+			ret = snprintf(niData.szTip, sizeof(niData.szTip), "Not Connected");
+		if (ret < 0)
+			niData.szTip[0] = 0;
 		break;
 
 	case CONNECTING:
@@ -52,6 +123,10 @@ void update_tray(struct tray_status *status) {
 			icon_wipe(bg);
 
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, connecting_width, connecting_height, connecting_bits);
+
+		ret = snprintf(niData.szTip, sizeof(niData.szTip), "Connecting");
+		if (ret < 0)
+			niData.szTip[0] = 0;
 		break;
 
 	case CONNECTED:
@@ -194,9 +269,21 @@ void update_tray(struct tray_status *status) {
 			d = rh % 10;
 			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digits_width[d], digits_height[d], digits_bits[d]);
 		}
+
+		snprintf(niData.szTip, sizeof(niData.szTip), "Temperature: %.2fC, Relative Humidity: %.2f%%, Dew Point: %.2fC",
+			status->temperature_celsius, status->relative_humidity, status->dew_point);
 		break;
 
 	default:
 		return;
 	}
+
+	niData.uFlags |= NIF_ICON;
+
+	SetLastError(0);
+	ret = Shell_NotifyIcon(NIM_MODIFY, &niData);
+	err = GetLastError();
+	odprintf("Shell_NotifyIcon[MODIFY]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
+	if (ret != TRUE)
+		tray_remove();
 }

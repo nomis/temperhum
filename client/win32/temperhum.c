@@ -28,8 +28,7 @@
 
 static int running = 1;
 
-void temperhum_run(char *node, char *service) {
-	WSADATA wsaData;
+int temperhum_run(HWND hwnd, char *node, char *service) {
 #if HAVE_GETADDRINFO
 	struct addrinfo hints;
 	struct addrinfo *addrs_res = NULL;
@@ -44,24 +43,21 @@ void temperhum_run(char *node, char *service) {
 	struct sockaddr *sa = NULL;
 	int sa_len = 0;
 	int s = -1;
-	long ret;
-	long err;
+	int ret;
+	DWORD err;
 	struct tray_status status;
 	char recv_buf[128];
 	char parse_buf[128];
 	unsigned int parse_pos = 0;
+	int def_sensor = 0;
 
 	odprintf("node=%s", node);
 	odprintf("service=%s", service);
 
-	SetLastError(0);
-	ret = WSAStartup(MAKEWORD(2,0), &wsaData);
-	err = GetLastError();
-	odprintf("WSAStartup: %d (%d)", ret, err);
-	if (ret != 0) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock 2.0 startup failed (%d)", ret);
-		exit(EXIT_FAILURE);
-	}
+	tray_add(hwnd);
+
+	status.conn = NOT_CONNECTED;
+	tray_update(hwnd, &status);
 
 #if HAVE_GETADDRINFO
 	hints.ai_flags = 0;
@@ -74,14 +70,16 @@ void temperhum_run(char *node, char *service) {
 	err = GetLastError();
 	odprintf("getaddrinfo: %d (%d)", ret, err);
 	if (ret != 0) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
-		exit(EXIT_FAILURE);
+		ret = snprintf(status.error, sizeof(status.error), "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
+		if (ret < 0)
+			status.error[0] = 0;
 	}
 
 	if (addrs_res == NULL) {
 		odprintf("no results");
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "No results resolving node \"%s\" service \"%s\"", node, service);
-		exit(EXIT_FAILURE);
+		ret = snprintf(status.error, sizeof(status.error), "No results resolving node \"%s\" service \"%s\"", node, service);
+		if (ret < 0)
+			status.error[0] = 0;
 	}
 
 	addrs_cur = addrs_res;
@@ -89,7 +87,7 @@ void temperhum_run(char *node, char *service) {
 	SetLastError(0);
 	ret = WSAStringToAddress(node, AF_INET, NULL, (LPSOCKADDR)&sa4, &sa4_len);
 	err = GetLastError();
-	odprintf("WSAStringToAddress[IPv4]: %d (%d)", ret, err);
+	odprintf("WSAStringToAddress[IPv4]: %d (%ld)", ret, err);
 	if (ret == 0) {
 		family = AF_INET;
 		sa4.sin_family = AF_INET;
@@ -102,7 +100,7 @@ void temperhum_run(char *node, char *service) {
 	SetLastError(0);
 	ret = WSAStringToAddress(node, AF_INET6, NULL, (LPSOCKADDR)&sa6, &sa6_len);
 	err = GetLastError();
-	odprintf("WSAStringToAddress[IPv6]: %d (%d)", ret, err);
+	odprintf("WSAStringToAddress[IPv6]: %d (%ld)", ret, err);
 	if (ret == 0) {
 		family = AF_INET6;
 		sa6.sin6_family = AF_INET6;
@@ -114,13 +112,10 @@ void temperhum_run(char *node, char *service) {
 
 	odprintf("family=%d", family);
 	if (family == AF_UNSPEC) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Invalid IP \"%s\" specified", node);
-		exit(EXIT_FAILURE);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to connect: Invalid IP \"%s\"", node);
+		return EXIT_FAILURE;
 	}
 #endif
-
-	status.conn = NOT_CONNECTED;
-	update_tray(&status);
 
 	while (running) {
 		if (status.conn != CONNECTED) {
@@ -137,14 +132,24 @@ void temperhum_run(char *node, char *service) {
 				SetLastError(0);
 				ret = getaddrinfo(node, service, &hints, &addrs_res);
 				err = GetLastError();
-				odprintf("getaddrinfo: %d (%d)", ret, err);
+				odprintf("getaddrinfo: %d (%ld)", ret, err);
 				if (ret != 0) {
+					ret = snprintf(status.error, sizeof(status.error), "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
+					if (ret < 0)
+						status.error[0] = 0;
+					tray_update(hwnd, &status);
+
 					Sleep(5000);
 					continue;
 				}
 
 				if (addrs_res == NULL) {
 					odprintf("no results");
+					ret = snprintf(status.error, sizeof(status.error), "No results resolving node \"%s\" service \"%s\"", node, service);
+					if (ret < 0)
+						status.error[0] = 0;
+					tray_update(hwnd, &status);
+
 					Sleep(5000);
 					continue;
 				}
@@ -159,9 +164,13 @@ void temperhum_run(char *node, char *service) {
 			SetLastError(0);
 			ret = getnameinfo(sa, sa_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST|NI_NUMERICSERV);
 			err = GetLastError();
-			odprintf("getnameinfo: %d (%d)", ret, err);
-			if (ret == 0)
+			odprintf("getnameinfo: %d (%ld)", ret, err);
+			if (ret == 0) {
 				odprintf("trying to connect to node \"%s\" service \"%s\"", hbuf, sbuf);
+			} else {
+				hbuf[0] = 0;
+				sbuf[0] = 0;
+			}
 			addrs_cur = addrs_cur->ai_next;
 #else
 			odprintf("trying to connect to node \"%s\" service \"%s\"", node, service);
@@ -170,7 +179,14 @@ void temperhum_run(char *node, char *service) {
 			SetLastError(0);
 			s = socket(family, SOCK_STREAM, IPPROTO_TCP);
 			err = GetLastError();
-			odprintf("socket: %d (%d)", s, err);
+			odprintf("socket: %d (%ld)", s, err);
+
+			if (s == -1) {
+				ret = snprintf(status.error, sizeof(status.error), "Unable to create socket (%ld)", err);
+				if (ret < 0)
+					status.error[0] = 0;
+				tray_update(hwnd, &status);
+			}
 
 			if (s != -1) {
 				int timeout = 5000; /* 5 seconds */
@@ -178,44 +194,61 @@ void temperhum_run(char *node, char *service) {
 				SetLastError(0);
 				ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void*)&timeout, sizeof(&timeout));
 				err = GetLastError();
-				odprintf("setsockopt: %d (%d)", ret, err);
+				odprintf("setsockopt: %d (%ld)", ret, err);
 				if (ret != 0) {
+					ret = snprintf(status.error, sizeof(status.error), "Unable to set socket timeout (%ld)", err);
+					if (ret < 0)
+						status.error[0] = 0;
+					tray_update(hwnd, &status);
+
 					SetLastError(0);
 					ret = closesocket(s);
 					err = GetLastError();
-					odprintf("closesocket: %d (%d)", ret, err);
+					odprintf("closesocket: %d (%ld)", ret, err);
 					s = -1;
 				}
 			}
 
 			if (s != -1) {
 				status.conn = CONNECTING;
-				update_tray(&status);
+				tray_update(hwnd, &status);
 
 				SetLastError(0);
 				ret = connect(s, sa, sa_len);
 				err = GetLastError();
-				odprintf("connect: %d (%d)", ret, err);
+				odprintf("connect: %d (%ld)", ret, err);
 				if (ret == 0) {
 					status.conn = CONNECTED;
+					status.error[0] = 0;
 					status.temperature_celsius = NAN;
 					status.relative_humidity = NAN;
 					status.dew_point = NAN;
-					update_tray(&status);
+					tray_update(hwnd, &status);
 
-#if HAVE_GETADDR_INFO
+#if HAVE_GETADDRINFO
 					freeaddrinfo(addrs_res);
 					addrs_res = NULL;
 #endif
 					parse_pos = 0;
 				} else {
 					status.conn = NOT_CONNECTED;
-					update_tray(&status);
+#if HAVE_GETADDRINFO
+					if (hbuf[0] != 0 && sbuf[0] != 0) {
+						ret = snprintf(status.error, sizeof(status.error), "Error connecting to node \"%s\" service \"%s\" (%ld)", hbuf, sbuf, err);
+					} else {
+#endif
+						ret = snprintf(status.error, sizeof(status.error), "Error connecting to node \"%s\" service \"%s\" (%ld)", node, service, err);
+#if HAVE_GETADDRINFO
+					}
+#endif
+					if (ret < 0)
+						status.error[0] = 0;
+					tray_update(hwnd, &status);
 
 					SetLastError(0);
 					ret = closesocket(s);
 					err = GetLastError();
-					odprintf("closesocket: %d (%d)", ret, err);
+					odprintf("closesocket: %d (%ld)", ret, err);
 					s = -1;
 				}
 			}
@@ -226,15 +259,18 @@ void temperhum_run(char *node, char *service) {
 			SetLastError(0);
 			ret = recv(s, recv_buf, sizeof(recv_buf), 0);
 			err = GetLastError();
-			odprintf("recv: %d (%d)", ret, err);
+			odprintf("recv: %d (%ld)", ret, err);
 			if (ret <= 0) {
 					status.conn = NOT_CONNECTED;
-					update_tray(&status);
+					ret = snprintf(status.error, sizeof(status.error), "Error reading from server (%ld)", err);
+					if (ret < 0)
+						status.error[0] = 0;
+					tray_update(hwnd, &status);
 
 					SetLastError(0);
 					ret = closesocket(s);
 					err = GetLastError();
-					odprintf("closesocket: %d (%d)", ret, err);
+					odprintf("closesocket: %d (%ld)", ret, err);
 					s = -1;
 			} else {
 				int size, i;
@@ -248,20 +284,26 @@ void temperhum_run(char *node, char *service) {
 						ret = sscanf(parse_buf, "%16s", msg_type);
 						if (ret == 1) {
 							odprintf("msg_type: %s", msg_type);
-							if (!strcmp(msg_type, "TEMPC")) {
-								ret = sscanf(parse_buf, "%*s %lf", &status.temperature_celsius);
-								if (ret != 1)
-									status.temperature_celsius = NAN;
-							} else if (!strcmp(msg_type, "RHUM%")) {
-								ret = sscanf(parse_buf, "%*s %lf", &status.relative_humidity);
-								if (ret != 1)
-									status.relative_humidity = NAN;
-							} else if (!strcmp(msg_type, "DEWPC")) {
-								ret = sscanf(parse_buf, "%*s %lf", &status.dew_point);
-								if (ret != 1)
-									status.dew_point = NAN;
-							} else if (!strcmp(msg_type, "FLUSH")) {
-								update_tray(&status);
+							if (!strcmp(msg_type, "SENSD")) {
+								def_sensor = 1;
+							} else if (!strcmp(msg_type, "SENSR")) {
+								def_sensor = 0;
+							} else if (def_sensor) {
+								if (!strcmp(msg_type, "TEMPC")) {
+									ret = sscanf(parse_buf, "%*s %lf", &status.temperature_celsius);
+									if (ret != 1)
+										status.temperature_celsius = NAN;
+								} else if (!strcmp(msg_type, "RHUM%")) {
+									ret = sscanf(parse_buf, "%*s %lf", &status.relative_humidity);
+									if (ret != 1)
+										status.relative_humidity = NAN;
+								} else if (!strcmp(msg_type, "DEWPC")) {
+									ret = sscanf(parse_buf, "%*s %lf", &status.dew_point);
+									if (ret != 1)
+										status.dew_point = NAN;
+								} else if (!strcmp(msg_type, "SENSF")) {
+									tray_update(hwnd, &status);
+								}
 							}
 						}
 
@@ -290,7 +332,7 @@ void temperhum_run(char *node, char *service) {
 		SetLastError(0);
 		ret = closesocket(s);
 		err = GetLastError();
-		odprintf("closesocket: %d (%d)", ret, err);
+		odprintf("closesocket: %d (%ld)", ret, err);
 	}
 
 #if HAVE_GETADDRINFO
@@ -298,20 +340,48 @@ void temperhum_run(char *node, char *service) {
 		freeaddrinfo(addrs_res);
 #endif
 
-	SetLastError(0);
-	ret = WSACleanup();
-	err = GetLastError();
-	odprintf("WSACleanup: %d (%d)", ret, err);
+	tray_remove();
+	return EXIT_SUCCESS;
 }
 
-int main(int argc, char *argv[]) {
-	char *node;
-	char *service = "21576";
-	int i;
+LRESULT CALLBACK temperhum_window(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	odprintf("temperhum_window: hwnd=%p msg=%u wparam=%08x lparam=%08x", hwnd, uMsg, wParam, lParam);
+
+	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nShowCmd) {
+	BOOL retb;
+	HLOCAL retp;
+	ATOM cls;
+	HWND hwnd;
+	DWORD err;
+	WNDCLASSEX wcx;
+	WSADATA wsaData;
+	LPWSTR *argv;
+	int argc;
+	char node[512];
+	char service[512] = "21576";
+	char buf[512];
+	int ret, status, i;
+
+	SetLastError(0);
+	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	err = GetLastError();
+	odprintf("CommandLineToArgvW: %p (%ld)", argv, err);
+	if (argv == NULL) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Error getting command line arguments (%ld)", err);
+		status = EXIT_FAILURE;
+		goto done;
+	}
 
 	odprintf("argc=%d", argc);
-	for (i = 0; i < argc; i++)
-		odprintf("argv[%d]=%s", i, argv[i]);
+	for (i = 0; i < argc; i++) {
+		ret = snprintf(buf, sizeof(buf), "%S", argv[i]);
+		if (ret < 0)
+			buf[0] = 0;
+		odprintf("argv[%d]=%s", i, buf);
+	}
 
 	if (argc < 2 || argc > 3) {
 #if HAVE_GETADDRINFO
@@ -321,13 +391,88 @@ int main(int argc, char *argv[]) {
 		odprintf("Usage: %s <ip> [port]", argv[0]);
 		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <ip> [port]", argv[0]);
 #endif
-		exit(EXIT_FAILURE);
+		status = EXIT_FAILURE;
+		goto free_argv;
 	}
 
-	node = argv[1];
-	if (argc == 3)
-		service = argv[2];
+	ret = snprintf(node, sizeof(node), "%S", argv[1]);
+	if (ret < 0)
+		node[0] = 0;
 
-	temperhum_run(node, service);
-	exit(EXIT_SUCCESS);
+	if (argc == 3) {
+		ret = snprintf(service, sizeof(service), "%S", argv[2]);
+		if (ret < 0)
+			service[0] = 0;
+	}
+
+	wcx.cbSize = sizeof(wcx);
+	wcx.style = 0;
+	wcx.lpfnWndProc = temperhum_window;
+	wcx.cbClsExtra = 0;
+	wcx.cbWndExtra = 0;
+	wcx.hInstance = hinst;
+	wcx.hIcon = NULL;
+	wcx.hCursor = NULL;
+	wcx.hbrBackground = NULL;
+	wcx.lpszMenuName = NULL;
+	wcx.lpszClassName = "temperhum";
+	wcx.hIconSm = NULL;
+
+	SetLastError(0);
+	cls = RegisterClassEx(&wcx);
+	err = GetLastError();
+	odprintf("RegisterClassEx: %d (%ld)", cls, err);
+	if (cls == 0) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Failed to register class (%ld)", err);
+		status = EXIT_FAILURE;
+		goto free_argv;
+	}
+
+	SetLastError(0);
+	hwnd = CreateWindow(wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hinst, NULL);
+	err = GetLastError();
+	odprintf("CreateWindow: %p (%ld)", hwnd, err);
+	if (hwnd == NULL) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Failed to create window (%ld)", err);
+		status = EXIT_FAILURE;
+		goto unregister_class;
+	}
+
+	SetLastError(0);
+	ret = WSAStartup(MAKEWORD(2,0), &wsaData);
+	err = GetLastError();
+	odprintf("WSAStartup: %d (%ld)", ret, err);
+	if (ret != 0) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock 2.0 startup failed (%d)", ret);
+		status = EXIT_FAILURE;
+		goto destroy_window;
+	}
+
+	status = temperhum_run(hwnd, node, service);
+
+	SetLastError(0);
+	ret = WSACleanup();
+	err = GetLastError();
+	odprintf("WSACleanup: %d (%ld)", ret, err);
+
+destroy_window:
+	SetLastError(0);
+	retb = DestroyWindow(hwnd);
+	err = GetLastError();
+	odprintf("DestroyWindow: %d (%ld)", retb, err);
+
+unregister_class:
+	SetLastError(0);
+	retb = UnregisterClass(wcx.lpszClassName, hinst);
+	err = GetLastError();
+	odprintf("UnregisterClass: %d (%ld)", retb, err);
+
+free_argv:
+	SetLastError(0);
+	retp = LocalFree(argv);
+	err = GetLastError();
+	odprintf("LocalFree: %p (%ld)", ret, err);
+
+done:
+	exit(status);
 }
