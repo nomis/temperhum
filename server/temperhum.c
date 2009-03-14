@@ -322,7 +322,7 @@ listen_failed:
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
 					ret |= th_send(current_c->fd, buf);
 
-					snprintf(buf, sizeof(buf), "RLHM%% %.2lf\n", current_d->readings.relative_humidity);
+					snprintf(buf, sizeof(buf), "RHUM%% %.2lf\n", current_d->readings.relative_humidity);
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
 					ret |= th_send(current_c->fd, buf);
 
@@ -330,7 +330,7 @@ listen_failed:
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
 					ret |= th_send(current_c->fd, buf);
 
-					ret |= th_send(current_c->fd, "COMPL\n");
+					ret |= th_send(current_c->fd, "SENSF\n");
 
 					last_c = current_c;
 					current_c = next;
