@@ -28,9 +28,9 @@
 
 #include "temperhum.h"
 
-static int th_send(int fd, char *msg) {
+static int th_send(int fd, char *msg, int flags) {
 	int len = strlen(msg);
-	int ret = send(fd, msg, len, MSG_NOSIGNAL);
+	int ret = send(fd, msg, len, MSG_NOSIGNAL|flags);
 	return (ret != len);
 }
 
@@ -316,21 +316,21 @@ listen_failed:
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
 					if (current_d->next == NULL)
 						buf[4] = 'D';
-					ret |= th_send(current_c->fd, buf);
+					ret |= th_send(current_c->fd, buf, MSG_MORE);
 
 					snprintf(buf, sizeof(buf), "TEMPC %.2lf\n", current_d->readings.temperature_celsius);
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
-					ret |= th_send(current_c->fd, buf);
+					ret |= th_send(current_c->fd, buf, MSG_MORE);
 
 					snprintf(buf, sizeof(buf), "RHUM%% %.2lf\n", current_d->readings.relative_humidity);
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
-					ret |= th_send(current_c->fd, buf);
+					ret |= th_send(current_c->fd, buf, MSG_MORE);
 
 					snprintf(buf, sizeof(buf), "DEWPC %.2lf\n", current_d->readings.dew_point);
 					buf[sizeof(buf)/sizeof(char) - 2] = '\n';
-					ret |= th_send(current_c->fd, buf);
+					ret |= th_send(current_c->fd, buf, MSG_MORE);
 
-					ret |= th_send(current_c->fd, "SENSF\n");
+					ret |= th_send(current_c->fd, "SENSF\n", 0);
 
 					last_c = current_c;
 					current_c = next;
