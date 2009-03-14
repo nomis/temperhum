@@ -15,5 +15,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define TITLE "TEMPerHum Tray Icon"
+struct th_readings {
+	double temperature_celsius;
+	double relative_humidity;
+	double dew_point;
+};
+
+struct th_device {
+	char name[4096];
+	char rrdfile[4096];
+	struct th_readings readings;
+	struct th_device *next;
+};
+
+struct th_socket {
+	int fd;
+	struct th_socket *next;
+};
+
 #define DEFAULT_SERVICE "21576"

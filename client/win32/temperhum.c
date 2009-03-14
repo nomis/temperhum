@@ -361,7 +361,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 	LPWSTR *argv;
 	int argc;
 	char node[512];
-	char service[512] = "21576";
+	char service[512] = DEFAULT_SERVICE;
 	char buf[512];
 	int ret, status, i;
 
