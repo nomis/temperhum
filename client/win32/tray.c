@@ -82,7 +82,7 @@ void tray_remove(void) {
 }
 
 void tray_update(HWND hwnd, struct tray_status *status) {
-	unsigned int h_fg, h_bg, h_end, fg, bg, p, d;
+	unsigned int fg, bg, p, d;
 	BOOL ret;
 	DWORD err;
 
@@ -98,10 +98,6 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 
 	fg = 0;
 	bg = ~0;
-
-	h_end = ICON_WIDTH/2;
-	h_fg = ~0;
-	h_bg = 0;
 
 	switch (status->conn) {
 	case NOT_CONNECTED:
@@ -130,9 +126,8 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 		break;
 
 	case CONNECTED:
-		icon_wipe(bg);
-
 		if (isnan(status->temperature_celsius)) {
+			icon_clear(0, 0, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT/2);
 			p = 0;
 
 			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
@@ -146,11 +141,19 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 
 			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
+			unsigned int h_fg, h_bg, h_end;
 			int tc = lrint(status->temperature_celsius * 100.0);
+
 			if (tc > 99999)
 				tc = 99999;
 			if (tc < -9999)
 				tc = -9999;
+
+			h_end = ICON_WIDTH/2;
+			h_fg = bg;
+			h_bg = fg;
+
+			icon_clear(h_bg, h_end, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT/2);
 
 			if (tc > 9999) {
 				/* _NNN 100 to 999 */
@@ -233,6 +236,7 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 		}
 
 		if (isnan(status->relative_humidity)) {
+			icon_clear(0, 0, bg, 0, ICON_HEIGHT/2, ICON_WIDTH, ICON_HEIGHT/2);
 			p = 0;
 
 			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dash_width, digit_dash_height, digit_dash_bits);
@@ -246,11 +250,19 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 
 			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
+			unsigned int h_fg, h_bg, h_end;
 			int rh = lrint(status->relative_humidity * 10.0);
+
 			if (rh > 999)
 				rh = 999;
 			if (rh < 0)
 				rh = 0;
+
+			h_end = ICON_WIDTH/2;
+			h_fg = bg;
+			h_bg = fg;
+
+			icon_clear(h_bg, h_end, bg, 0, ICON_HEIGHT/2, ICON_WIDTH, ICON_HEIGHT/2);
 
 			/* NN.N 00.0 to 99.9 */
 			p = 0;
