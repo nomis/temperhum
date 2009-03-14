@@ -45,6 +45,7 @@ void temperhum_run(char *node, char *service) {
 	int sa_len = 0;
 	int s = -1;
 	long ret;
+	long err;
 	struct tray_status status;
 	char recv_buf[128];
 	char parse_buf[128];
@@ -53,10 +54,12 @@ void temperhum_run(char *node, char *service) {
 	odprintf("node=%s", node);
 	odprintf("service=%s", service);
 
+	SetLastError(0);
 	ret = WSAStartup(MAKEWORD(2,0), &wsaData);
+	err = GetLastError();
+	odprintf("WSAStartup: %d (%d)", ret, err);
 	if (ret != 0) {
-		odprintf("WSAStartup: %d", ret);
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock 2.0 startup failed (%d)");
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Winsock 2.0 startup failed (%d)", ret);
 		exit(EXIT_FAILURE);
 	}
 
@@ -66,17 +69,27 @@ void temperhum_run(char *node, char *service) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
+	SetLastError(0);
 	ret = getaddrinfo(node, service, &hints, &addrs_res);
-	odprintf("getaddrinfo: %d", ret);
+	err = GetLastError();
+	odprintf("getaddrinfo: %d (%d)", ret, err);
 	if (ret != 0) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to resolve node \"%s\" service \"%s\"", node, service);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to resolve node \"%s\" service \"%s\" (%d)", node, service, ret);
+		exit(EXIT_FAILURE);
+	}
+
+	if (addrs_res == NULL) {
+		odprintf("no results");
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "No results resolving node \"%s\" service \"%s\"", node, service);
 		exit(EXIT_FAILURE);
 	}
 
 	addrs_cur = addrs_res;
 #else
+	SetLastError(0);
 	ret = WSAStringToAddress(node, AF_INET, NULL, (LPSOCKADDR)&sa4, &sa4_len);
-	odprintf("WSAStringToAddress[IPv4]: %d", ret);
+	err = GetLastError();
+	odprintf("WSAStringToAddress[IPv4]: %d (%d)", ret, err);
 	if (ret == 0) {
 		family = AF_INET;
 		sa4.sin_family = AF_INET;
@@ -86,8 +99,10 @@ void temperhum_run(char *node, char *service) {
 		sa_len = sa4_len;
 	}
 
+	SetLastError(0);
 	ret = WSAStringToAddress(node, AF_INET6, NULL, (LPSOCKADDR)&sa6, &sa6_len);
-	odprintf("WSAStringToAddress[IPv6]: %d", ret);
+	err = GetLastError();
+	odprintf("WSAStringToAddress[IPv6]: %d (%d)", ret, err);
 	if (ret == 0) {
 		family = AF_INET6;
 		sa6.sin6_family = AF_INET6;
@@ -113,10 +128,23 @@ void temperhum_run(char *node, char *service) {
 			char hbuf[NI_MAXHOST];
 			char sbuf[NI_MAXSERV];
 
-			if (addrs_res == NULL || addrs_cur == NULL) {
+			if (addrs_cur == NULL && addrs_res != NULL) {
+				freeaddrinfo(addrs_res);
+				addrs_res = NULL;
+			}
+
+			if (addrs_res == NULL) {
+				SetLastError(0);
 				ret = getaddrinfo(node, service, &hints, &addrs_res);
-				odprintf("getaddrinfo: %d", ret);
+				err = GetLastError();
+				odprintf("getaddrinfo: %d (%d)", ret, err);
 				if (ret != 0) {
+					Sleep(5000);
+					continue;
+				}
+
+				if (addrs_res == NULL) {
+					odprintf("no results");
 					Sleep(5000);
 					continue;
 				}
@@ -128,8 +156,11 @@ void temperhum_run(char *node, char *service) {
 			sa = addrs_cur->ai_addr;
 			sa_len = addrs_cur->ai_addrlen;
 
+			SetLastError(0);
 			ret = getnameinfo(sa, sa_len, hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), NI_NUMERICHOST|NI_NUMERICSERV);
-			if (ret == 0) 
+			err = GetLastError();
+			odprintf("getnameinfo: %d (%d)", ret, err);
+			if (ret == 0)
 				odprintf("trying to connect to node \"%s\" service \"%s\"", hbuf, sbuf);
 			addrs_cur = addrs_cur->ai_next;
 #else
@@ -138,16 +169,21 @@ void temperhum_run(char *node, char *service) {
 
 			SetLastError(0);
 			s = socket(family, SOCK_STREAM, IPPROTO_TCP);
-			odprintf("socket: %d (%d)", s, GetLastError());
+			err = GetLastError();
+			odprintf("socket: %d (%d)", s, err);
 
 			if (s != -1) {
 				int timeout = 5000; /* 5 seconds */
 
 				SetLastError(0);
 				ret = setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void*)&timeout, sizeof(&timeout));
-				odprintf("setsockopt: %d (%d)", ret, GetLastError());
+				err = GetLastError();
+				odprintf("setsockopt: %d (%d)", ret, err);
 				if (ret != 0) {
-					closesocket(s);
+					SetLastError(0);
+					ret = closesocket(s);
+					err = GetLastError();
+					odprintf("closesocket: %d (%d)", ret, err);
 					s = -1;
 				}
 			}
@@ -158,7 +194,8 @@ void temperhum_run(char *node, char *service) {
 
 				SetLastError(0);
 				ret = connect(s, sa, sa_len);
-				odprintf("connect: %d (%d)", ret, GetLastError());
+				err = GetLastError();
+				odprintf("connect: %d (%d)", ret, err);
 				if (ret == 0) {
 					status.conn = CONNECTED;
 					status.temperature_celsius = NAN;
@@ -170,11 +207,15 @@ void temperhum_run(char *node, char *service) {
 					freeaddrinfo(addrs_res);
 					addrs_res = NULL;
 #endif
+					parse_pos = 0;
 				} else {
 					status.conn = NOT_CONNECTED;
 					update_tray(&status);
 
-					closesocket(s);
+					SetLastError(0);
+					ret = closesocket(s);
+					err = GetLastError();
+					odprintf("closesocket: %d (%d)", ret, err);
 					s = -1;
 				}
 			}
@@ -184,13 +225,16 @@ void temperhum_run(char *node, char *service) {
 		} else {
 			SetLastError(0);
 			ret = recv(s, recv_buf, sizeof(recv_buf), 0);
-			odprintf("recv: %d (%d)", ret, GetLastError());
+			err = GetLastError();
+			odprintf("recv: %d (%d)", ret, err);
 			if (ret <= 0) {
 					status.conn = NOT_CONNECTED;
 					update_tray(&status);
 
-					parse_pos = 0;
-					closesocket(s);
+					SetLastError(0);
+					ret = closesocket(s);
+					err = GetLastError();
+					odprintf("closesocket: %d (%d)", ret, err);
 					s = -1;
 			} else {
 				int size, i;
@@ -242,15 +286,22 @@ void temperhum_run(char *node, char *service) {
 		}
 	}
 
-	if (s != -1)
-		closesocket(s);
+	if (s != -1) {
+		SetLastError(0);
+		ret = closesocket(s);
+		err = GetLastError();
+		odprintf("closesocket: %d (%d)", ret, err);
+	}
 
 #if HAVE_GETADDRINFO
 	if (addrs_res != NULL)
 		freeaddrinfo(addrs_res);
 #endif
 
-	WSACleanup();
+	SetLastError(0);
+	ret = WSACleanup();
+	err = GetLastError();
+	odprintf("WSACleanup: %d (%d)", ret, err);
 }
 
 int main(int argc, char *argv[]) {
