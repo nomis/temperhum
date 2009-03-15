@@ -407,6 +407,9 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 			odprintf("closesocket: %d (%ld)", ret, err);
 
 			data->s = INVALID_SOCKET;
+#if HAVE_GETADDRINFO
+			data->addrs_cur = data->addrs_cur->ai_next;
+#endif
 			return 1;
 		}
 
