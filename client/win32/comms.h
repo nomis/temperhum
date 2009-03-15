@@ -15,10 +15,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define TRAY_ID 1
-
-void tray_init(struct th_data *data);
-void tray_add(HWND hwnd, struct th_data *data);
-void tray_update(HWND hwnd, struct th_data *data);
-BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam);
-void tray_remove(HWND hwnd, struct th_data *data);
+int comms_init(struct th_data *data);
+void comms_destroy(struct th_data *data);
+void comms_disconnect(struct th_data *data);
+int comms_connect(HWND hwnd, struct th_data *data);
+int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD sError);
+void comms_parse(HWND hwnd, struct th_data *data);

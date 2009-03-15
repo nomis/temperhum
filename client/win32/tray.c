@@ -20,76 +20,88 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
+#include "config.h"
 #include "debug.h"
 #include "icon.h"
 #include "temperhum.h"
+#include "comms.h"
 #include "tray.h"
 
 #include "digits.h"
 #include "connecting.xbm"
 #include "not_connected.xbm"
 
-static NOTIFYICONDATA niData;
-static int tray_ok = 0;
+void tray_init(struct th_data *data) {
+	data->status.conn = NOT_CONNECTED;
+	data->tray_ok = 0;
+}
 
-void tray_add(HWND hwnd) {
+void tray_add(HWND hwnd, struct th_data *data) {
+	NOTIFYICONDATA *niData;
 	BOOL ret;
 	DWORD err;
 
 	odprintf("tray[add]");
 
-	if (!tray_ok) {
-		niData.cbSize = sizeof(NOTIFYICONDATA);
-		niData.hWnd = hwnd;
-		niData.uID = 1;
-		niData.uFlags = NIF_MESSAGE|NIF_TIP;
-		niData.uCallbackMessage = WM_APP;
-		niData.hIcon = NULL;
-		niData.szTip[0] = 0;
-		niData.uVersion = NOTIFYICON_VERSION;
+	if (!data->tray_ok) {
+		niData = &data->niData;
+		niData->cbSize = sizeof(NOTIFYICONDATA);
+		niData->hWnd = hwnd;
+		niData->uID = TRAY_ID;
+		niData->uFlags = NIF_MESSAGE|NIF_TIP;
+		niData->uCallbackMessage = WM_APP_TRAY;
+		niData->hIcon = NULL;
+		niData->szTip[0] = 0;
+		niData->uVersion = NOTIFYICON_VERSION;
 
 		SetLastError(0);
-		ret = Shell_NotifyIcon(NIM_ADD, &niData);
+		ret = Shell_NotifyIcon(NIM_ADD, niData);
 		err = GetLastError();
 		odprintf("Shell_NotifyIcon[ADD]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 		if (ret == TRUE)
-			tray_ok = 1;
+			data->tray_ok = 1;
 
 		SetLastError(0);
-		ret = Shell_NotifyIcon(NIM_SETVERSION, &niData);
+		ret = Shell_NotifyIcon(NIM_SETVERSION, niData);
 		err = GetLastError();
 		odprintf("Shell_NotifyIcon[SETVERSION]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 		if (ret != TRUE)
-			niData.uVersion = 0;
+			niData->uVersion = 0;
 	}
 }
 
-void tray_remove(void) {
+void tray_remove(HWND hwnd, struct th_data *data) {
+	NOTIFYICONDATA *niData = &data->niData;
 	BOOL ret;
 	DWORD err;
+	(void)hwnd;
 
 	odprintf("tray[remove]");
 
-	if (tray_ok) {
+	if (data->tray_ok) {
 		SetLastError(0);
-		ret = Shell_NotifyIcon(NIM_DELETE, &niData);
+		ret = Shell_NotifyIcon(NIM_DELETE, niData);
 		err = GetLastError();
 		odprintf("Shell_NotifyIcon[DELETE]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 		if (ret == TRUE)
-			tray_ok = 0;
+			data->tray_ok = 0;
 	}
 }
 
-void tray_update(HWND hwnd, struct tray_status *status) {
+void tray_update(HWND hwnd, struct th_data *data) {
+	struct tray_status *status = &data->status;
+	NOTIFYICONDATA *niData = &data->niData;
 	unsigned int fg, bg, p, d;
 	BOOL ret;
 	DWORD err;
 
-	if (!tray_ok) {
-		tray_add(hwnd);
+	if (!data->tray_ok) {
+		tray_add(hwnd, data);
 
-		if (!tray_ok)
+		if (!data->tray_ok)
 			return;
 	}
 
@@ -107,11 +119,11 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, not_connected_width, not_connected_height, not_connected_bits);
 
 		if (status->error[0] != 0)
-			ret = snprintf(niData.szTip, sizeof(niData.szTip), "Not Connected: %s", status->error);
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected: %s", status->error);
 		else
-			ret = snprintf(niData.szTip, sizeof(niData.szTip), "Not Connected");
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected");
 		if (ret < 0)
-			niData.szTip[0] = 0;
+			niData->szTip[0] = 0;
 		break;
 
 	case CONNECTING:
@@ -120,9 +132,12 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, connecting_width, connecting_height, connecting_bits);
 
-		ret = snprintf(niData.szTip, sizeof(niData.szTip), "Connecting");
+		if (status->error[0] != 0)
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting to %s", status->error);
+		else
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting");
 		if (ret < 0)
-			niData.szTip[0] = 0;
+			niData->szTip[0] = 0;
 		break;
 
 	case CONNECTED:
@@ -282,7 +297,7 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digits_width[d], digits_height[d], digits_bits[d]);
 		}
 
-		snprintf(niData.szTip, sizeof(niData.szTip), "Temperature: %.2fC, Relative Humidity: %.2f%%, Dew Point: %.2fC",
+		snprintf(niData->szTip, sizeof(niData->szTip), "Temperature: %.2fC, Relative Humidity: %.2f%%, Dew Point: %.2fC",
 			status->temperature_celsius, status->relative_humidity, status->dew_point);
 		break;
 
@@ -290,12 +305,55 @@ void tray_update(HWND hwnd, struct tray_status *status) {
 		return;
 	}
 
-	niData.uFlags |= NIF_ICON;
+	niData->uFlags |= NIF_ICON;
 
 	SetLastError(0);
-	ret = Shell_NotifyIcon(NIM_MODIFY, &niData);
+	ret = Shell_NotifyIcon(NIM_MODIFY, niData);
 	err = GetLastError();
 	odprintf("Shell_NotifyIcon[MODIFY]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 	if (ret != TRUE)
-		tray_remove();
+		tray_remove(hwnd, data);
+}
+
+void tray_shutdown(struct th_data *data) {
+	odprintf("shutdown");
+
+	comms_disconnect(data);
+	data->running = 0;
+
+	PostQuitMessage(EXIT_SUCCESS);
+}
+
+BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam) {
+	(void)hwnd;
+
+	odprintf("tray[activity]: wParam=%ld lParam=%ld", wParam, lParam);
+
+	if (wParam != TRAY_ID)
+		return FALSE;
+
+	switch (data->niData.uVersion) {
+		case NOTIFYICON_VERSION:
+			switch (lParam) {
+			case WM_CONTEXTMENU:
+				tray_shutdown(data);
+				return TRUE;
+
+			default:
+				return FALSE;
+			}
+
+		case 0:
+			switch (lParam) {
+			case WM_RBUTTONUP:
+				tray_shutdown(data);
+				return TRUE;
+
+			default:
+				return FALSE;
+			}
+
+	default:
+		return FALSE;
+	}
 }

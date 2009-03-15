@@ -17,3 +17,52 @@
 
 #define TITLE "TEMPerHum Tray Icon"
 #define DEFAULT_SERVICE "21576"
+
+#define WM_APP_NET  (WM_APP+0)
+#define WM_APP_TRAY (WM_APP+1)
+#define WM_APP_SOCK (WM_APP+2)
+
+#define NET_MSG_CONNECT 0
+
+enum conn_status {
+	NOT_CONNECTED,
+	CONNECTING,
+	CONNECTED
+};
+
+struct tray_status {
+	enum conn_status conn;
+	char error[512];
+	double temperature_celsius;
+	double relative_humidity;
+	double dew_point;
+};
+
+struct th_data {
+	int running;
+
+	char *node;
+	char *service;
+
+#if HAVE_GETADDRINFO
+	char hbuf[NI_MAXHOST];
+	char sbuf[NI_MAXSERV];
+	struct addrinfo hints;
+	struct addrinfo *addrs_res;
+	struct addrinfo *addrs_cur;
+#else
+	struct sockaddr_in sa4;
+	struct sockaddr_in6 sa6;
+	int family;
+	struct sockaddr *sa;
+#endif
+	SOCKET s;
+
+	char parse_buf[128];
+	unsigned int parse_pos;
+	int def_sensor;
+
+	NOTIFYICONDATA niData;
+	int tray_ok;
+	struct tray_status status;
+};
