@@ -15,6 +15,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef SIO_KEEPALIVE_VALS
+# define SIO_KEEPALIVE_VALS _WSAIOW(IOC_VENDOR,4)
+struct tcp_keepalive {
+	u_long onoff;
+	u_long keepalivetime;
+	u_long keepaliveinterval;
+}; 
+#endif
+
 int comms_init(struct th_data *data);
 void comms_destroy(struct th_data *data);
 void comms_disconnect(struct th_data *data);

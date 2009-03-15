@@ -144,8 +144,15 @@ void comms_disconnect(struct th_data *data) {
 
 int comms_connect(HWND hwnd, struct th_data *data) {
 	struct tray_status *status = &data->status;
+	struct tcp_keepalive ka_get;
+	struct tcp_keepalive ka_set = {
+		.onoff = 1,
+		.keepalivetime = 5000, /* 5 seconds */
+		.keepaliveinterval = 5000 /* 5 seconds */
+	};
 	int timeout = 5000; /* 5 seconds */
 	INT ret;
+	DWORD retd;
 	DWORD err;
 
 	odprintf("comms[connect]");
@@ -233,6 +240,28 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 	odprintf("setsockopt: %d (%ld)", ret, err);
 	if (ret != 0) {
 		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket timeout (%ld)", err);
+		if (ret < 0)
+			status->error[0] = 0;
+		tray_update(hwnd, data);
+
+		SetLastError(0);
+		ret = closesocket(data->s);
+		err = GetLastError();
+		odprintf("closesocket: %d (%ld)", ret, err);
+		data->s = INVALID_SOCKET;
+
+#if HAVE_GETADDRINFO
+		data->addrs_cur = data->addrs_cur->ai_next;
+#endif
+		return 1;
+	}
+
+	SetLastError(0);
+	ret = WSAIoctl(data->s, SIO_KEEPALIVE_VALS, (void*)&ka_set, sizeof(ka_set), (void*)&ka_get, sizeof(ka_get), &retd, NULL, NULL);
+	err = GetLastError();
+	odprintf("WSAIoctl: %d, %d (%ld)", ret, retd, err);
+	if (ret != 0) {
+		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket keepalive options (%ld)", err);
 		if (ret < 0)
 			status->error[0] = 0;
 		tray_update(hwnd, data);
@@ -356,8 +385,6 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 #endif
 			data->parse_pos = 0;
 			data->def_sensor = 0;
-
-			// TODO: read timeout
 			return 0;
 		} else {
 			status->conn = NOT_CONNECTED;
@@ -446,8 +473,6 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 						data->parse_buf[data->parse_pos] = 0;
 					}
 				}
-
-				// TODO: read timeout
 				return 0;
 			}
 		} else {
