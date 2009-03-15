@@ -10,7 +10,7 @@ clean:
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-temperhum.c: temperhum.h
+temperhum.o: temperhum.h
 
 temperhum: $(TEMPERHUM_OBJS) Makefile
 	$(CC) $(CFLAGS) -lm -lrt -lrrd -o $@ $(TEMPERHUM_OBJS)
