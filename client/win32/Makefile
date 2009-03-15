@@ -14,11 +14,11 @@ clean:
 %.o: %.c Makefile
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c -o $@ $<
 
-debug.c: debug.h
-icon.c: debug.h icon.h
-temperhum.c: config.h debug.h temperhum.h tray.h
-tray.c: config.h debug.h tray.h icon.h temperhum.h digits.h
-comms.c: config.h debug.h temperhum.h tray.h
+debug.o: debug.h
+icon.o: debug.h icon.h
+temperhum.o: config.h debug.h temperhum.h tray.h
+tray.o: config.h debug.h tray.h icon.h temperhum.h digits.h
+comms.o: config.h debug.h temperhum.h tray.h
 
 exe.o: exe.rc
 	$(CROSS_COMPILE)$(WINDRES) -i $< -o $@
