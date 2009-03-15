@@ -1,6 +1,7 @@
 .PHONY: all clean
 
-CC=i686-mingw32-gcc
+CROSS_COMPILE=i686-mingw32-
+CC=gcc
 CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE -D_WIN32_WINNT=0x0501 -D_WIN32_IE=0x0500 -O2
 LDFLAGS=-lws2_32 -lm
 TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o
@@ -10,7 +11,7 @@ clean:
 	rm -f temperhum.exe *.o
 
 %.o: %.c Makefile
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c -o $@ $<
 
 debug.c: debug.h
 icon.c: debug.h icon.h
@@ -19,4 +20,4 @@ tray.c: config.h debug.h tray.h icon.h temperhum.h digits.h
 comms.c: config.h debug.h temperhum.h tray.h
 
 temperhum.exe: $(TEMPERHUM_OBJS) Makefile
-	$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)
