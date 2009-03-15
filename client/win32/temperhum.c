@@ -35,6 +35,8 @@ int temperhum_run(HWND hWnd, char *node, char *service) {
 	LONG_PTR retlp;
 	DWORD err;
 
+	odprintf("temperhum[run]");
+
 	SetLastError(0);
 	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)&data);
 	err = GetLastError();
@@ -113,7 +115,7 @@ int temperhum_run(HWND hWnd, char *node, char *service) {
 }
 
 void temperhum_shutdown(struct th_data *data, int status) {
-	odprintf("shutdown");
+	odprintf("temperhum[shutdown]");
 
 	comms_disconnect(data);
 	data->running = 0;
@@ -125,7 +127,7 @@ void temperhum_retry(HWND hWnd, struct th_data *data) {
 	INT ret;
 	DWORD err;
 
-	odprintf("retry");
+	odprintf("temperhum[retry]");
 
 	if (data->running) {
 		SetLastError(0);
@@ -149,7 +151,7 @@ LRESULT CALLBACK temperhum_window(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	data = (struct th_data*)GetWindowLongPtr(hWnd, GWL_USERDATA);
 	err = GetLastError();
 
-	odprintf("temperhum_window: hWnd=%p (data=%p) msg=%u wparam=%d lparam=%d", hWnd, data, uMsg, wParam, lParam);
+	odprintf("temperhum[window]: hWnd=%p (data=%p) msg=%u wparam=%d lparam=%d", hWnd, data, uMsg, wParam, lParam);
 	if (data == NULL) {
 		odprintf("GetWindowLongPtr: %p (%ld)", data, err);
 
@@ -207,6 +209,8 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 	char service[512] = DEFAULT_SERVICE;
 	char buf[512];
 	int ret, status, i;
+
+	odprintf("temperhum[main]");
 
 	SetLastError(0);
 	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
