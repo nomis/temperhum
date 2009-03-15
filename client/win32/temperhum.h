@@ -34,7 +34,7 @@ enum conn_status {
 
 struct tray_status {
 	enum conn_status conn;
-	char error[512];
+	char msg[512];
 	double temperature_celsius;
 	double relative_humidity;
 	double dew_point;

@@ -105,8 +105,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			return;
 	}
 
-	odprintf("tray[update]: conn=%d error=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
-		status->conn, status->error, status->temperature_celsius, status->relative_humidity, status->dew_point);
+	odprintf("tray[update]: conn=%d msg=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
+		status->conn, status->msg, status->temperature_celsius, status->relative_humidity, status->dew_point);
 
 	fg = 0;
 	bg = ~0;
@@ -118,8 +118,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, not_connected_width, not_connected_height, not_connected_bits);
 
-		if (status->error[0] != 0)
-			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected: %s", status->error);
+		if (status->msg[0] != 0)
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected: %s", status->msg);
 		else
 			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected");
 		if (ret < 0)
@@ -132,8 +132,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 		icon_blit(fg, bg, 0, 0, 0, 0, 0, connecting_width, connecting_height, connecting_bits);
 
-		if (status->error[0] != 0)
-			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting to %s", status->error);
+		if (status->msg[0] != 0)
+			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting to %s", status->msg);
 		else
 			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting");
 		if (ret < 0)

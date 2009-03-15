@@ -178,9 +178,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 		err = GetLastError();
 		odprintf("getaddrinfo: %d (%ld)", ret, err);
 		if (ret != 0) {
-			ret = snprintf(status->error, sizeof(status->error), "Unable to resolve node \"%s\" service \"%s\" (%d)", data->node, data->service, ret);
+			ret = snprintf(status->msg, sizeof(status->msg), "Unable to resolve node \"%s\" service \"%s\" (%d)", data->node, data->service, ret);
 			if (ret < 0)
-				status->error[0] = 0;
+				status->msg[0] = 0;
 			tray_update(hWnd, data);
 
 			return 1;
@@ -188,9 +188,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 
 		if (data->addrs_res == NULL) {
 			odprintf("no results");
-			ret = snprintf(status->error, sizeof(status->error), "No results resolving node \"%s\" service \"%s\"", data->node, data->service);
+			ret = snprintf(status->msg, sizeof(status->msg), "No results resolving node \"%s\" service \"%s\"", data->node, data->service);
 			if (ret < 0)
-				status->error[0] = 0;
+				status->msg[0] = 0;
 			tray_update(hWnd, data);
 
 			return 1;
@@ -223,9 +223,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	odprintf("socket: %d (%ld)", data->s, err);
 
 	if (data->s == INVALID_SOCKET) {
-		ret = snprintf(status->error, sizeof(status->error), "Unable to create socket (%ld)", err);
+		ret = snprintf(status->msg, sizeof(status->msg), "Unable to create socket (%ld)", err);
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 #if HAVE_GETADDRINFO
@@ -239,9 +239,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	err = GetLastError();
 	odprintf("setsockopt: %d (%ld)", ret, err);
 	if (ret != 0) {
-		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket timeout (%ld)", err);
+		ret = snprintf(status->msg, sizeof(status->msg), "Unable to set socket timeout (%ld)", err);
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 		SetLastError(0);
@@ -261,9 +261,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	err = GetLastError();
 	odprintf("WSAIoctl: %d, %d (%ld)", ret, retd, err);
 	if (ret != 0) {
-		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket keepalive options (%ld)", err);
+		ret = snprintf(status->msg, sizeof(status->msg), "Unable to set socket keepalive options (%ld)", err);
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 		SetLastError(0);
@@ -283,9 +283,9 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	err = GetLastError();
 	odprintf("WSAAsyncSelect: %d (%ld)", ret, err);
 	if (ret != 0) {
-		ret = snprintf(status->error, sizeof(status->error), "Unable to async select on socket (%ld)", err);
+		ret = snprintf(status->msg, sizeof(status->msg), "Unable to async select on socket (%ld)", err);
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 		SetLastError(0);
@@ -303,15 +303,15 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	status->conn = CONNECTING;
 #if HAVE_GETADDRINFO
 	if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-		ret = snprintf(status->error, sizeof(status->error), "node \"%s\" service \"%s\" (%ld)", data->hbuf, data->sbuf, err);
+		ret = snprintf(status->msg, sizeof(status->msg), "node \"%s\" service \"%s\" (%ld)", data->hbuf, data->sbuf, err);
 	} else {
 #endif
-		ret = snprintf(status->error, sizeof(status->error), "node \"%s\" service \"%s\" (%ld)", data->node, data->service, err);
+		ret = snprintf(status->msg, sizeof(status->msg), "node \"%s\" service \"%s\" (%ld)", data->node, data->service, err);
 #if HAVE_GETADDRINFO
 	}
 #endif
 	if (ret < 0)
-		status->error[0] = 0;
+		status->msg[0] = 0;
 	tray_update(hWnd, data);
 
 	SetLastError(0);
@@ -328,15 +328,15 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 		status->conn = NOT_CONNECTED;
 #if HAVE_GETADDRINFO
 		if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-			ret = snprintf(status->error, sizeof(status->error), "Error connecting to node \"%s\" service \"%s\"", data->hbuf, data->sbuf);
+			ret = snprintf(status->msg, sizeof(status->msg), "Error connecting to node \"%s\" service \"%s\"", data->hbuf, data->sbuf);
 		} else {
 #endif
-			ret = snprintf(status->error, sizeof(status->error), "Error connecting to node \"%s\" service \"%s\"", data->node, data->service);
+			ret = snprintf(status->msg, sizeof(status->msg), "Error connecting to node \"%s\" service \"%s\"", data->node, data->service);
 #if HAVE_GETADDRINFO
 		}
 #endif
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 		SetLastError(0);
@@ -373,7 +373,7 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 
 		if (sError == 0) {
 			status->conn = CONNECTED;
-			status->error[0] = 0;
+			status->msg[0] = 0;
 			status->temperature_celsius = NAN;
 			status->relative_humidity = NAN;
 			status->dew_point = NAN;
@@ -390,15 +390,15 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 			status->conn = NOT_CONNECTED;
 #if HAVE_GETADDRINFO
 			if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-				ret = snprintf(status->error, sizeof(status->error), "Error connecting to node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
+				ret = snprintf(status->msg, sizeof(status->msg), "Error connecting to node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
 			} else {
 #endif
-				ret = snprintf(status->error, sizeof(status->error), "Error connecting to node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
+				ret = snprintf(status->msg, sizeof(status->msg), "Error connecting to node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
 #if HAVE_GETADDRINFO
 			}
 #endif
 			if (ret < 0)
-				status->error[0] = 0;
+				status->msg[0] = 0;
 			tray_update(hWnd, data);
 
 			SetLastError(0);
@@ -426,15 +426,15 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 				status->conn = NOT_CONNECTED;
 #if HAVE_GETADDRINFO
 				if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-					ret = snprintf(status->error, sizeof(status->error), "Error reading from node \"%s\" service \"%s\" (%ld)", data->hbuf, data->sbuf, err);
+					ret = snprintf(status->msg, sizeof(status->msg), "Error reading from node \"%s\" service \"%s\" (%ld)", data->hbuf, data->sbuf, err);
 				} else {
 #endif
-					ret = snprintf(status->error, sizeof(status->error), "Error reading from node \"%s\" service \"%s\" (%ld)", data->node, data->service, err);
+					ret = snprintf(status->msg, sizeof(status->msg), "Error reading from node \"%s\" service \"%s\" (%ld)", data->node, data->service, err);
 #if HAVE_GETADDRINFO
 				}
 #endif
 				if (ret < 0)
-					status->error[0] = 0;
+					status->msg[0] = 0;
 				tray_update(hWnd, data);
 
 				SetLastError(0);
@@ -479,15 +479,15 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 			status->conn = NOT_CONNECTED;
 #if HAVE_GETADDRINFO
 			if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-				ret = snprintf(status->error, sizeof(status->error), "Error reading from node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
+				ret = snprintf(status->msg, sizeof(status->msg), "Error reading from node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
 			} else {
 #endif
-				ret = snprintf(status->error, sizeof(status->error), "Error reading from node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
+				ret = snprintf(status->msg, sizeof(status->msg), "Error reading from node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
 #if HAVE_GETADDRINFO
 			}
 #endif
 			if (ret < 0)
-				status->error[0] = 0;
+				status->msg[0] = 0;
 			tray_update(hWnd, data);
 
 			SetLastError(0);
@@ -507,15 +507,15 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 		status->conn = NOT_CONNECTED;
 #if HAVE_GETADDRINFO
 		if (data->hbuf[0] != 0 && data->sbuf[0] != 0) {
-			ret = snprintf(status->error, sizeof(status->error), "Lost connection to node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
+			ret = snprintf(status->msg, sizeof(status->msg), "Lost connection to node \"%s\" service \"%s\" (%d)", data->hbuf, data->sbuf, sError);
 		} else {
 #endif
-			ret = snprintf(status->error, sizeof(status->error), "Lost connection to node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
+			ret = snprintf(status->msg, sizeof(status->msg), "Lost connection to node \"%s\" service \"%s\" (%d)", data->node, data->service, sError);
 #if HAVE_GETADDRINFO
 		}
 #endif
 		if (ret < 0)
-			status->error[0] = 0;
+			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
 		data->s = INVALID_SOCKET;
