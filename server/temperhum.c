@@ -67,10 +67,14 @@ int main(int argc, char *argv[]) {
 		snprintf(current_d->rrdfile, sizeof(current_d->rrdfile), "%s.rrd", argv[i]);
 	}
 
+	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
 	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_addrlen = 0;
+	hints.ai_addr = NULL;
+	hints.ai_canonname = NULL;
+	hints.ai_next = NULL;
 
 	ret = getaddrinfo(NULL, DEFAULT_SERVICE, &hints, &res);
 	if (ret != 0) {
