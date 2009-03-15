@@ -28,6 +28,9 @@
 #include "digit_eight.xbm"
 #include "digit_nine.xbm"
 
+#define digits_base_width digit_dash_width
+#define digits_base_height digit_dash_height
+
 static unsigned char *digits_bits[10] = {
 	digit_zero_bits,
 	digit_one_bits,

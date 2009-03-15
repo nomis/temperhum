@@ -41,6 +41,7 @@ struct tray_status {
 };
 
 struct th_data {
+	HINSTANCE hInstance;
 	int running;
 
 	char *node;

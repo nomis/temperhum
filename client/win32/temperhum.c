@@ -27,7 +27,7 @@
 #include "comms.h"
 #include "tray.h"
 
-int temperhum_run(HWND hWnd, char *node, char *service) {
+int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
 	struct th_data data;
 	int status;
 	MSG msg;
@@ -46,6 +46,7 @@ int temperhum_run(HWND hWnd, char *node, char *service) {
 		return EXIT_FAILURE;
 	}
 
+	data.hInstance = hInstance;
 	data.node = node;
 	data.service = service;
 
@@ -195,7 +196,7 @@ LRESULT CALLBACK temperhum_window(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nShowCmd) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine, int nShowCmd) {
 	BOOL retb;
 	HLOCAL retp;
 	ATOM cls;
@@ -257,7 +258,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 	wcx.lpfnWndProc = temperhum_window;
 	wcx.cbClsExtra = 0;
 	wcx.cbWndExtra = 0;
-	wcx.hInstance = hinst;
+	wcx.hInstance = hInstance;
 	wcx.hIcon = NULL;
 	wcx.hCursor = NULL;
 	wcx.hbrBackground = NULL;
@@ -276,7 +277,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 	}
 
 	SetLastError(0);
-	hWnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hinst, NULL);
+	hWnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hInstance, NULL);
 	err = GetLastError();
 	odprintf("CreateWindowEx: %p (%ld)", hWnd, err);
 	if (hWnd == NULL) {
@@ -295,7 +296,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 		goto destroy_window;
 	}
 
-	status = temperhum_run(hWnd, node, service);
+	status = temperhum_run(hInstance, hWnd, node, service);
 
 	SetLastError(0);
 	ret = WSACleanup();
@@ -310,7 +311,7 @@ destroy_window:
 
 unregister_class:
 	SetLastError(0);
-	retb = UnregisterClass(wcx.lpszClassName, hinst);
+	retb = UnregisterClass(wcx.lpszClassName, hInstance);
 	err = GetLastError();
 	odprintf("UnregisterClass: %d (%ld)", retb, err);
 

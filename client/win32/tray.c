@@ -94,6 +94,7 @@ void tray_remove(HWND hWnd, struct th_data *data) {
 void tray_update(HWND hWnd, struct th_data *data) {
 	struct tray_status *status = &data->status;
 	NOTIFYICONDATA *niData = &data->niData;
+	HICON oldIcon;
 	unsigned int fg, bg, p, d;
 	BOOL ret;
 	DWORD err;
@@ -116,7 +117,7 @@ void tray_update(HWND hWnd, struct th_data *data) {
 		if (not_connected_width < ICON_WIDTH || not_connected_height < ICON_HEIGHT)
 			icon_wipe(bg);
 
-		icon_blit(fg, bg, 0, 0, 0, 0, 0, not_connected_width, not_connected_height, not_connected_bits);
+		icon_blit(0, 0, 0, fg, bg, 0, 0, not_connected_width, not_connected_height, not_connected_bits);
 
 		if (status->msg[0] != 0)
 			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Not Connected: %s", status->msg);
@@ -130,7 +131,7 @@ void tray_update(HWND hWnd, struct th_data *data) {
 		if (connecting_width < ICON_WIDTH || connecting_height < ICON_HEIGHT)
 			icon_wipe(bg);
 
-		icon_blit(fg, bg, 0, 0, 0, 0, 0, connecting_width, connecting_height, connecting_bits);
+		icon_blit(0, 0, 0, fg, bg, 0, 0, connecting_width, connecting_height, connecting_bits);
 
 		if (status->msg[0] != 0)
 			ret = snprintf(niData->szTip, sizeof(niData->szTip), "Connecting to %s", status->msg);
@@ -142,19 +143,19 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 	case CONNECTED:
 		if (isnan(status->temperature_celsius)) {
-			icon_clear(0, 0, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT/2);
+			icon_clear(0, 0, bg, 0, 0, ICON_WIDTH, digits_base_height);
 			p = 0;
 
-			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
 			p += digit_dash_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
 			p += digit_dash_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dot_width, digit_dot_height, digit_dot_bits);
+			icon_blit(0, 0, 0, fg, bg, p, 0, digit_dot_width, digit_dot_height, digit_dot_bits);
 			p += digit_dot_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
 			unsigned int h_fg, h_bg, h_end;
 			int tc = lrint(status->temperature_celsius * 100.0);
@@ -164,11 +165,11 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			if (tc < -9999)
 				tc = -9999;
 
-			h_end = ICON_WIDTH/2;
+			h_end = digits_base_width + 1;
 			h_fg = bg;
 			h_bg = fg;
 
-			icon_clear(h_bg, h_end, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT/2);
+			icon_clear(h_bg, h_end, bg, 0, 0, ICON_WIDTH, digits_base_height);
 
 			if (tc > 9999) {
 				/* _NNN 100 to 999 */
@@ -250,20 +251,22 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			}
 		}
 
+		icon_clear(0, 0, bg, 0, ICON_HEIGHT/2 - (ICON_HEIGHT/2 - digits_base_height), ICON_WIDTH, (ICON_HEIGHT/2 - digits_base_height) * 2);
+
 		if (isnan(status->relative_humidity)) {
-			icon_clear(0, 0, bg, 0, ICON_HEIGHT/2, ICON_WIDTH, ICON_HEIGHT/2);
+			icon_clear(0, 0, bg, 0, ICON_HEIGHT - digits_base_height, ICON_WIDTH, digit_dash_height);
 			p = 0;
 
-			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dash_width, digit_dash_height, digit_dash_bits);
 			p += digit_dash_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dash_width, digit_dash_height, digit_dash_bits);
 			p += digit_dash_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dot_width, digit_dot_height, digit_dot_bits);
+			icon_blit(0, 0, 0, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dot_width, digit_dot_height, digit_dot_bits);
 			p += digit_dot_width + 1;
 
-			icon_blit(fg, bg, 0, 0, 0, p, ICON_HEIGHT/2, digit_dash_width, digit_dash_height, digit_dash_bits);
+			icon_blit(0, 0, 0, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
 			unsigned int h_fg, h_bg, h_end;
 			int rh = lrint(status->relative_humidity * 10.0);
@@ -273,28 +276,28 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			if (rh < 0)
 				rh = 0;
 
-			h_end = ICON_WIDTH/2;
+			h_end = digits_base_width + 1;
 			h_fg = bg;
 			h_bg = fg;
 
-			icon_clear(h_bg, h_end, bg, 0, ICON_HEIGHT/2, ICON_WIDTH, ICON_HEIGHT/2);
+			icon_clear(h_bg, h_end, bg, 0, ICON_HEIGHT - digits_base_height, ICON_WIDTH, digits_base_height);
 
 			/* NN.N 00.0 to 99.9 */
 			p = 0;
 
 			d = (rh/100) % 10;
-			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digits_width[d], digits_height[d], digits_bits[d]);
+			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT - digits_base_height, digits_width[d], digits_height[d], digits_bits[d]);
 			p += digits_width[d] + 1;
 
 			d = (rh/10) % 10;
-			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digits_width[d], digits_height[d], digits_bits[d]);
+			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT - digits_base_height, digits_width[d], digits_height[d], digits_bits[d]);
 			p += digits_width[d] + 1;
 
-			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digit_dot_width, digit_dot_height, digit_dot_bits);
+			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dot_width, digit_dot_height, digit_dot_bits);
 			p += digit_dot_width + 1;
 
 			d = rh % 10;
-			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT/2, digits_width[d], digits_height[d], digits_bits[d]);
+			icon_blit(h_fg, h_bg, h_end, fg, bg, p, ICON_HEIGHT - digits_base_height, digits_width[d], digits_height[d], digits_bits[d]);
 		}
 
 		snprintf(niData->szTip, sizeof(niData->szTip), "Temperature: %.2fC, Relative Humidity: %.2f%%, Dew Point: %.2fC",
@@ -305,7 +308,12 @@ void tray_update(HWND hWnd, struct th_data *data) {
 		return;
 	}
 
-	niData->uFlags |= NIF_ICON;
+	oldIcon = niData->hIcon;
+
+	niData->uFlags &= ~NIF_ICON;
+	niData->hIcon = icon_create(data->hInstance);
+	if (niData->hIcon != NULL)
+		niData->uFlags |= NIF_ICON;
 
 	SetLastError(0);
 	ret = Shell_NotifyIcon(NIM_MODIFY, niData);
@@ -313,6 +321,9 @@ void tray_update(HWND hWnd, struct th_data *data) {
 	odprintf("Shell_NotifyIcon[MODIFY]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 	if (ret != TRUE)
 		tray_remove(hWnd, data);
+
+	if (oldIcon != NULL)
+		icon_destroy(niData->hIcon);
 }
 
 BOOL tray_activity(HWND hWnd, struct th_data *data, WPARAM wParam, LPARAM lParam) {
