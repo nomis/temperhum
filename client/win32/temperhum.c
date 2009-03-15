@@ -74,14 +74,14 @@ int temperhum_run(HWND hWnd, char *node, char *service) {
 	while (data.running) {
 		SetLastError(0);
 		ret = GetMessage(&msg, NULL, 0, 0);
-#ifdef DEBUG
+#if DEBUG >= 2
 		err = GetLastError();
 		odprintf("GetMessage: %d (%ld)", ret, err);
 #endif
 
 		/* Fatal error */
 		if (ret == -1) {
-#ifndef DEBUG
+#if DEBUG < 2
 			err = GetLastError();
 			odprintf("GetMessage: %d (%ld)", ret, err);
 #endif
@@ -90,7 +90,7 @@ int temperhum_run(HWND hWnd, char *node, char *service) {
 
 		/* WM_QUIT */
 		if (ret == 0) {
-#ifndef DEBUG
+#if DEBUG < 2
 			err = GetLastError();
 			odprintf("GetMessage: %d (%ld)", ret, err);
 #endif

@@ -15,5 +15,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef DEBUG
+# define DEBUG 1
+#endif
+
+#if DEBUG > 0
 void odprintf(const char *fmt, ...);
 void mbprintf(const char *title, int flags, const char *fmt, ...);
+#else
+static inline void odprintf(const char *fmt, ...) {
+	(void)fmt;
+}
+static inline void mbprintf(const char *title, int flags, const char *fmt, ...) {
+	(void)title;
+	(void)flags;
+	(void)fmt;
+}
+#endif

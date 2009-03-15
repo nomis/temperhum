@@ -21,6 +21,7 @@
 
 #include "debug.h"
 
+#if DEBUG > 0
 void odprintf(const char *fmt, ...) {
 		char buf[4096] = {};
 		int ret;
@@ -50,3 +51,4 @@ void mbprintf(const char *title, int flags, const char *fmt, ...) {
 		else
 			MessageBox(NULL, buf, title, flags);
 }
+#endif
