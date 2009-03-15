@@ -4,7 +4,8 @@ CROSS_COMPILE=i686-mingw32-
 CC=gcc
 CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE -D_WIN32_WINNT=0x0501 -D_WIN32_IE=0x0500 -O2
 LDFLAGS=-lws2_32 -lm
-TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o
+WINDRES=windres
+TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o exe.o
 
 all: temperhum.exe
 clean:
@@ -18,6 +19,9 @@ icon.c: debug.h icon.h
 temperhum.c: config.h debug.h temperhum.h tray.h
 tray.c: config.h debug.h tray.h icon.h temperhum.h digits.h
 comms.c: config.h debug.h temperhum.h tray.h
+
+exe.o: exe.rc
+	$(CROSS_COMPILE)$(WINDRES) -i $< -o $@
 
 temperhum.exe: $(TEMPERHUM_OBJS) Makefile
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)

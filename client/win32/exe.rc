@@ -1,0 +1,33 @@
+#include <windows.h>
+#include "debug.h"
+#include "temperhum.h"
+
+1 VERSIONINFO
+	FILEVERSION 0, 0, 0, 0
+	PRODUCTVERSION 0, 0, 0, 0
+#if DEBUG > 0
+	FILEFLAGSMASK VS_FF_DEBUG
+#else
+	FILEFLAGSMASK 0
+#endif
+	FILEOS VOS_NT_WINDOWS32
+	FILETYPE VFT_APP
+	FILESUBTYPE 0
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "080904B0"
+		BEGIN
+			VALUE "CompanyName", "Simon Arlott\0"
+			VALUE "FileDescription", TITLE"\0"
+			VALUE "FileVersion", "N/A (git://proxima.lp0.eu/simon/temperhum/)\0"
+			VALUE "LegalCopyright", "Copyright ©2009  Simon Arlott\0"
+			VALUE "InternalName", "temperhum\0"
+			VALUE "ProductName", TITLE"\0"
+			VALUE "ProductVersion", "N/A (git://proxima.lp0.eu/simon/temperhum/)\0"
+			VALUE "OriginalFilename", "temperhum.exe\0"
+			VALUE "Licence", "Released under the GNU General Public License Version 2\0"
+		END
+	END
+END
+
