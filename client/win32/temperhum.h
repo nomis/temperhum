@@ -24,6 +24,8 @@
 
 #define NET_MSG_CONNECT 0
 
+#define RETRY_TIMER_ID 1
+
 enum conn_status {
 	NOT_CONNECTED,
 	CONNECTING,
@@ -66,3 +68,5 @@ struct th_data {
 	int tray_ok;
 	struct tray_status status;
 };
+
+void temperhum_shutdown(struct th_data *data, int status);

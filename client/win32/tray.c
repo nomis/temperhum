@@ -315,15 +315,6 @@ void tray_update(HWND hwnd, struct th_data *data) {
 		tray_remove(hwnd, data);
 }
 
-void tray_shutdown(struct th_data *data) {
-	odprintf("shutdown");
-
-	comms_disconnect(data);
-	data->running = 0;
-
-	PostQuitMessage(EXIT_SUCCESS);
-}
-
 BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam) {
 	(void)hwnd;
 
@@ -336,7 +327,7 @@ BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam
 		case NOTIFYICON_VERSION:
 			switch (lParam) {
 			case WM_CONTEXTMENU:
-				tray_shutdown(data);
+				temperhum_shutdown(data, EXIT_SUCCESS);
 				return TRUE;
 
 			default:
@@ -346,7 +337,7 @@ BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam
 		case 0:
 			switch (lParam) {
 			case WM_RBUTTONUP:
-				tray_shutdown(data);
+				temperhum_shutdown(data, EXIT_SUCCESS);
 				return TRUE;
 
 			default:

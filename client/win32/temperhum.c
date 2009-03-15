@@ -112,6 +112,33 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 	return status;
 }
 
+void temperhum_shutdown(struct th_data *data, int status) {
+	odprintf("shutdown");
+
+	comms_disconnect(data);
+	data->running = 0;
+
+	PostQuitMessage(status);
+}
+
+void temperhum_retry(HWND hwnd, struct th_data *data) {
+	INT ret;
+	DWORD err;
+
+	odprintf("retry");
+
+	if (data->running) {
+		SetLastError(0);
+		ret = SetTimer(hwnd, RETRY_TIMER_ID, 5000, NULL); /* 5 seconds */
+		err = GetLastError();
+		odprintf("SetTimer: %d (%ld)", data, err);
+		if (ret == 0) {
+			mbprintf(TITLE, MB_OK|MB_ICONERROR, "Error starting connection retry timer (%ld)", err);
+			temperhum_shutdown(data, EXIT_FAILURE);
+		}
+	}
+}
+
 LRESULT CALLBACK temperhum_window(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	struct th_data *data;
 	BOOL retb;
@@ -134,9 +161,8 @@ LRESULT CALLBACK temperhum_window(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		switch (lParam) {
 		case NET_MSG_CONNECT:
 			ret = comms_connect(hwnd, data);
-			if (ret != 0) {
-				// TODO retry in 5s
-			}
+			if (ret != 0)
+				temperhum_retry(hwnd, data);
 			return TRUE;
 		}
 		break;
@@ -149,10 +175,19 @@ LRESULT CALLBACK temperhum_window(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
 	case WM_APP_SOCK:
 		ret = comms_activity(hwnd, data, (SOCKET)wParam, WSAGETSELECTEVENT(lParam), WSAGETSELECTERROR(lParam));
-		if (ret != 0) {
-			// TODO retry in 5s
-		}
+		if (ret != 0)
+			temperhum_retry(hwnd, data);
 		return TRUE;
+
+	case WM_TIMER:
+		switch (wParam) {
+		case RETRY_TIMER_ID:
+			ret = comms_connect(hwnd, data);
+			if (ret != 0)
+				temperhum_retry(hwnd, data);
+			return TRUE;
+		}
+		break;
 	}
 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
