@@ -39,7 +39,7 @@ void tray_init(struct th_data *data) {
 	data->tray_ok = 0;
 }
 
-void tray_add(HWND hwnd, struct th_data *data) {
+void tray_add(HWND hWnd, struct th_data *data) {
 	NOTIFYICONDATA *niData;
 	BOOL ret;
 	DWORD err;
@@ -49,7 +49,7 @@ void tray_add(HWND hwnd, struct th_data *data) {
 	if (!data->tray_ok) {
 		niData = &data->niData;
 		niData->cbSize = sizeof(NOTIFYICONDATA);
-		niData->hWnd = hwnd;
+		niData->hWnd = hWnd;
 		niData->uID = TRAY_ID;
 		niData->uFlags = NIF_MESSAGE|NIF_TIP;
 		niData->uCallbackMessage = WM_APP_TRAY;
@@ -73,11 +73,11 @@ void tray_add(HWND hwnd, struct th_data *data) {
 	}
 }
 
-void tray_remove(HWND hwnd, struct th_data *data) {
+void tray_remove(HWND hWnd, struct th_data *data) {
 	NOTIFYICONDATA *niData = &data->niData;
 	BOOL ret;
 	DWORD err;
-	(void)hwnd;
+	(void)hWnd;
 
 	odprintf("tray[remove]");
 
@@ -91,7 +91,7 @@ void tray_remove(HWND hwnd, struct th_data *data) {
 	}
 }
 
-void tray_update(HWND hwnd, struct th_data *data) {
+void tray_update(HWND hWnd, struct th_data *data) {
 	struct tray_status *status = &data->status;
 	NOTIFYICONDATA *niData = &data->niData;
 	unsigned int fg, bg, p, d;
@@ -99,7 +99,7 @@ void tray_update(HWND hwnd, struct th_data *data) {
 	DWORD err;
 
 	if (!data->tray_ok) {
-		tray_add(hwnd, data);
+		tray_add(hWnd, data);
 
 		if (!data->tray_ok)
 			return;
@@ -312,11 +312,11 @@ void tray_update(HWND hwnd, struct th_data *data) {
 	err = GetLastError();
 	odprintf("Shell_NotifyIcon[MODIFY]: %s (%ld)", ret == TRUE ? "TRUE" : "FALSE", err);
 	if (ret != TRUE)
-		tray_remove(hwnd, data);
+		tray_remove(hWnd, data);
 }
 
-BOOL tray_activity(HWND hwnd, struct th_data *data, WPARAM wParam, LPARAM lParam) {
-	(void)hwnd;
+BOOL tray_activity(HWND hWnd, struct th_data *data, WPARAM wParam, LPARAM lParam) {
+	(void)hWnd;
 
 	odprintf("tray[activity]: wParam=%ld lParam=%ld", wParam, lParam);
 

@@ -27,6 +27,6 @@ struct tcp_keepalive {
 int comms_init(struct th_data *data);
 void comms_destroy(struct th_data *data);
 void comms_disconnect(struct th_data *data);
-int comms_connect(HWND hwnd, struct th_data *data);
-int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD sError);
-void comms_parse(HWND hwnd, struct th_data *data);
+int comms_connect(HWND hWnd, struct th_data *data);
+int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD sError);
+void comms_parse(HWND hWnd, struct th_data *data);

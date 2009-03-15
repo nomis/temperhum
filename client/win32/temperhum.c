@@ -27,7 +27,7 @@
 #include "comms.h"
 #include "tray.h"
 
-int temperhum_run(HWND hwnd, char *node, char *service) {
+int temperhum_run(HWND hWnd, char *node, char *service) {
 	struct th_data data;
 	int status;
 	MSG msg;
@@ -36,7 +36,7 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 	DWORD err;
 
 	SetLastError(0);
-	retlp = SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)&data);
+	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)&data);
 	err = GetLastError();
 	odprintf("SetWindowLongPtr: %p (%ld)", retlp, err);
 	if (err != 0) {
@@ -48,8 +48,8 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 	data.service = service;
 
 	tray_init(&data);
-	tray_add(hwnd, &data);
-	tray_update(hwnd, &data);
+	tray_add(hWnd, &data);
+	tray_update(hWnd, &data);
 
 	ret = comms_init(&data);
 	odprintf("comms_init: %d", ret);
@@ -61,7 +61,7 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 		status = EXIT_SUCCESS;
 
 		SetLastError(0);
-		ret = PostMessage(hwnd, WM_APP_NET, 0, NET_MSG_CONNECT);
+		ret = PostMessage(hWnd, WM_APP_NET, 0, NET_MSG_CONNECT);
 		err = GetLastError();
 		odprintf("PostMessage: %d (%ld)", ret, err);
 		if (ret == 0) {
@@ -102,10 +102,10 @@ int temperhum_run(HWND hwnd, char *node, char *service) {
 	}
 
 	comms_destroy(&data);
-	tray_remove(hwnd, &data);
+	tray_remove(hWnd, &data);
 
 	SetLastError(0);
-	retlp = SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR)NULL);
+	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)NULL);
 	err = GetLastError();
 	odprintf("SetWindowLongPtr: %p (%ld)", retlp, err);
 
@@ -121,7 +121,7 @@ void temperhum_shutdown(struct th_data *data, int status) {
 	PostQuitMessage(status);
 }
 
-void temperhum_retry(HWND hwnd, struct th_data *data) {
+void temperhum_retry(HWND hWnd, struct th_data *data) {
 	INT ret;
 	DWORD err;
 
@@ -129,7 +129,7 @@ void temperhum_retry(HWND hwnd, struct th_data *data) {
 
 	if (data->running) {
 		SetLastError(0);
-		ret = SetTimer(hwnd, RETRY_TIMER_ID, 5000, NULL); /* 5 seconds */
+		ret = SetTimer(hWnd, RETRY_TIMER_ID, 5000, NULL); /* 5 seconds */
 		err = GetLastError();
 		odprintf("SetTimer: %d (%ld)", data, err);
 		if (ret == 0) {
@@ -139,65 +139,65 @@ void temperhum_retry(HWND hwnd, struct th_data *data) {
 	}
 }
 
-LRESULT CALLBACK temperhum_window(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK temperhum_window(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	struct th_data *data;
 	BOOL retb;
 	INT ret;
 	DWORD err;
 
 	SetLastError(0);
-	data = (struct th_data*)GetWindowLongPtr(hwnd, GWL_USERDATA);
+	data = (struct th_data*)GetWindowLongPtr(hWnd, GWL_USERDATA);
 	err = GetLastError();
 
-	odprintf("temperhum_window: hwnd=%p (data=%p) msg=%u wparam=%d lparam=%d", hwnd, data, uMsg, wParam, lParam);
+	odprintf("temperhum_window: hWnd=%p (data=%p) msg=%u wparam=%d lparam=%d", hWnd, data, uMsg, wParam, lParam);
 	if (data == NULL) {
 		odprintf("GetWindowLongPtr: %p (%ld)", data, err);
 
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
 	switch (uMsg) {
 	case WM_APP_NET:
 		switch (lParam) {
 		case NET_MSG_CONNECT:
-			ret = comms_connect(hwnd, data);
+			ret = comms_connect(hWnd, data);
 			if (ret != 0)
-				temperhum_retry(hwnd, data);
+				temperhum_retry(hWnd, data);
 			return TRUE;
 		}
 		break;
 
 	case WM_APP_TRAY:
-		retb = tray_activity(hwnd, data, wParam, lParam);
+		retb = tray_activity(hWnd, data, wParam, lParam);
 		if (retb == TRUE)
 			return TRUE;
 		break;
 
 	case WM_APP_SOCK:
-		ret = comms_activity(hwnd, data, (SOCKET)wParam, WSAGETSELECTEVENT(lParam), WSAGETSELECTERROR(lParam));
+		ret = comms_activity(hWnd, data, (SOCKET)wParam, WSAGETSELECTEVENT(lParam), WSAGETSELECTERROR(lParam));
 		if (ret != 0)
-			temperhum_retry(hwnd, data);
+			temperhum_retry(hWnd, data);
 		return TRUE;
 
 	case WM_TIMER:
 		switch (wParam) {
 		case RETRY_TIMER_ID:
-			ret = comms_connect(hwnd, data);
+			ret = comms_connect(hWnd, data);
 			if (ret != 0)
-				temperhum_retry(hwnd, data);
+				temperhum_retry(hWnd, data);
 			return TRUE;
 		}
 		break;
 	}
 
-	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nShowCmd) {
 	BOOL retb;
 	HLOCAL retp;
 	ATOM cls;
-	HWND hwnd;
+	HWND hWnd;
 	DWORD err;
 	WNDCLASSEX wcx;
 	WSADATA wsaData;
@@ -272,10 +272,10 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 	}
 
 	SetLastError(0);
-	hwnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hinst, NULL);
+	hWnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hinst, NULL);
 	err = GetLastError();
-	odprintf("CreateWindowEx: %p (%ld)", hwnd, err);
-	if (hwnd == NULL) {
+	odprintf("CreateWindowEx: %p (%ld)", hWnd, err);
+	if (hWnd == NULL) {
 		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Failed to create window (%ld)", err);
 		status = EXIT_FAILURE;
 		goto unregister_class;
@@ -291,7 +291,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 		goto destroy_window;
 	}
 
-	status = temperhum_run(hwnd, node, service);
+	status = temperhum_run(hWnd, node, service);
 
 	SetLastError(0);
 	ret = WSACleanup();
@@ -300,7 +300,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPSTR lpCmdLine, int nS
 
 destroy_window:
 	SetLastError(0);
-	retb = DestroyWindow(hwnd);
+	retb = DestroyWindow(hWnd);
 	err = GetLastError();
 	odprintf("DestroyWindow: %d (%ld)", retb, err);
 

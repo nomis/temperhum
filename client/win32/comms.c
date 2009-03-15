@@ -142,7 +142,7 @@ void comms_disconnect(struct th_data *data) {
 	}
 }
 
-int comms_connect(HWND hwnd, struct th_data *data) {
+int comms_connect(HWND hWnd, struct th_data *data) {
 	struct tray_status *status = &data->status;
 	struct tcp_keepalive ka_get;
 	struct tcp_keepalive ka_set = {
@@ -164,7 +164,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 		return 0;
 
 	status->conn = NOT_CONNECTED;
-	tray_update(hwnd, data);
+	tray_update(hWnd, data);
 
 #if HAVE_GETADDRINFO
 	if (data->addrs_cur == NULL && data->addrs_res != NULL) {
@@ -181,7 +181,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 			ret = snprintf(status->error, sizeof(status->error), "Unable to resolve node \"%s\" service \"%s\" (%d)", data->node, data->service, ret);
 			if (ret < 0)
 				status->error[0] = 0;
-			tray_update(hwnd, data);
+			tray_update(hWnd, data);
 
 			return 1;
 		}
@@ -191,7 +191,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 			ret = snprintf(status->error, sizeof(status->error), "No results resolving node \"%s\" service \"%s\"", data->node, data->service);
 			if (ret < 0)
 				status->error[0] = 0;
-			tray_update(hwnd, data);
+			tray_update(hWnd, data);
 
 			return 1;
 		}
@@ -226,7 +226,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 		ret = snprintf(status->error, sizeof(status->error), "Unable to create socket (%ld)", err);
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 #if HAVE_GETADDRINFO
 		data->addrs_cur = data->addrs_cur->ai_next;
@@ -242,7 +242,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket timeout (%ld)", err);
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 		SetLastError(0);
 		ret = closesocket(data->s);
@@ -264,7 +264,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 		ret = snprintf(status->error, sizeof(status->error), "Unable to set socket keepalive options (%ld)", err);
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 		SetLastError(0);
 		ret = closesocket(data->s);
@@ -279,14 +279,14 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 	}
 
 	SetLastError(0);
-	ret = WSAAsyncSelect(data->s, hwnd, WM_APP_SOCK, FD_CONNECT|FD_READ|FD_CLOSE);
+	ret = WSAAsyncSelect(data->s, hWnd, WM_APP_SOCK, FD_CONNECT|FD_READ|FD_CLOSE);
 	err = GetLastError();
 	odprintf("WSAAsyncSelect: %d (%ld)", ret, err);
 	if (ret != 0) {
 		ret = snprintf(status->error, sizeof(status->error), "Unable to async select on socket (%ld)", err);
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 		SetLastError(0);
 		ret = closesocket(data->s);
@@ -312,7 +312,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 #endif
 	if (ret < 0)
 		status->error[0] = 0;
-	tray_update(hwnd, data);
+	tray_update(hWnd, data);
 
 	SetLastError(0);
 #if HAVE_GETADDRINFO
@@ -337,7 +337,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 #endif
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 		SetLastError(0);
 		ret = closesocket(data->s);
@@ -352,7 +352,7 @@ int comms_connect(HWND hwnd, struct th_data *data) {
 	}
 }
 
-int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD sError) {
+int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD sError) {
 	struct tray_status *status = &data->status;
 	INT ret;
 	DWORD err;
@@ -377,7 +377,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 			status->temperature_celsius = NAN;
 			status->relative_humidity = NAN;
 			status->dew_point = NAN;
-			tray_update(hwnd, data);
+			tray_update(hWnd, data);
 
 #if HAVE_GETADDRINFO
 			freeaddrinfo(data->addrs_res);
@@ -399,7 +399,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 #endif
 			if (ret < 0)
 				status->error[0] = 0;
-			tray_update(hwnd, data);
+			tray_update(hWnd, data);
 
 			SetLastError(0);
 			ret = closesocket(data->s);
@@ -435,7 +435,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 #endif
 				if (ret < 0)
 					status->error[0] = 0;
-				tray_update(hwnd, data);
+				tray_update(hWnd, data);
 
 				SetLastError(0);
 				ret = closesocket(data->s);
@@ -453,7 +453,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 				for (i = 0; i < size; i++) {
 					/* find a newline and parse the buffer */
 					if (recv_buf[i] == '\n') {
-						comms_parse(hwnd, data);
+						comms_parse(hWnd, data);
 
 						/* clear buffer */
 						data->parse_pos = 0;
@@ -488,7 +488,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 #endif
 			if (ret < 0)
 				status->error[0] = 0;
-			tray_update(hwnd, data);
+			tray_update(hWnd, data);
 
 			SetLastError(0);
 			ret = closesocket(data->s);
@@ -516,7 +516,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 #endif
 		if (ret < 0)
 			status->error[0] = 0;
-		tray_update(hwnd, data);
+		tray_update(hWnd, data);
 
 		data->s = INVALID_SOCKET;
 		return 0;
@@ -526,7 +526,7 @@ int comms_activity(HWND hwnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 	}
 }
 
-void comms_parse(HWND hwnd, struct th_data *data) {
+void comms_parse(HWND hWnd, struct th_data *data) {
 	struct tray_status *status = &data->status;
 	char msg_type[16];
 
@@ -547,7 +547,7 @@ void comms_parse(HWND hwnd, struct th_data *data) {
 				if (sscanf(data->parse_buf, "%*s %lf", &status->dew_point) != 1)
 					status->dew_point = NAN;
 			} else if (!strcmp(msg_type, "SENSF")) {
-				tray_update(hwnd, data);
+				tray_update(hWnd, data);
 			}
 		}
 	}
