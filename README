@@ -70,6 +70,10 @@ Run the main process:
  1236342818.371585371; T  25.30℃ / RH  42.28% / DP  11.56℃
  1236342819.428093143; T  25.49℃ / RH  42.11% / DP  11.67℃
  1236342820.485240453; T  25.56℃ / RH  41.92% / DP  11.67℃
+
+It's also possible to specify more than one device. If you try to access
+multiple devices concurrently, you'll soon run into problems with invalid
+data due to the timing involved.
 	
 	
 = Hardware =
