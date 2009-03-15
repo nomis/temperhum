@@ -101,7 +101,7 @@ int comms_init(struct th_data *data) {
 	}
 
 	odprintf("family=%d", data->family);
-	if (family == AF_UNSPEC) {
+	if (data->family == AF_UNSPEC) {
 		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to connect: Invalid IP \"%s\"", data->node);
 		return 1;
 	}
@@ -210,7 +210,7 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 		data->sbuf[0] = 0;
 	}
 #else
-	odprintf("trying to connect to node \"%s\" service \"%s\"", node, service);
+	odprintf("trying to connect to node \"%s\" service \"%s\"", data->node, data->service);
 #endif
 
 	SetLastError(0);

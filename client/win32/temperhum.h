@@ -57,6 +57,7 @@ struct th_data {
 	struct sockaddr_in6 sa6;
 	int family;
 	struct sockaddr *sa;
+	int sa_len;
 #endif
 	SOCKET s;
 
