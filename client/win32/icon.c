@@ -68,23 +68,31 @@ void icon_blit(unsigned int fg1, unsigned int bg1, unsigned int cx, unsigned int
 
 	odprintf("icon_blit: fg1=#%08x bg1=#%08x cx=%u fg2=#%08x bg2=#%08x sx=%u sy=%u width=%u height=%u data=%p", fg1, bg1, cx, fg2, bg2, sx, sy, width, height, data);
 
+	/* row width in bytes */
 	row_b = (width + 7) >> 3;
 
+	/* use first colour scheme */
 	fg = fg1;
 	bg = bg1;
 
 	for (x = sx; x < sx+width && x < ICON_WIDTH; x++) {
-		px = ((x - sx) & 7);
+		/* byte position in row */
 		col_b = ((x - sx) >> 3);
 
+		/* bit position in byte */
+		px = ((x - sx) & 7);
+
+		/* change to second colour scheme */
 		if (x >= cx) {
 			fg = fg2;
 			bg = bg2;
 		}
 		
 		for (y = sy; y < sy+height && y < ICON_HEIGHT; y++) {
+			/* row offset + column offset */
 			py = (row_b * (y - sy)) + col_b;
 
+			/* select bit from row/column byte */
 			if ((data[py] >> px) & 1)
 				c = fg;
 			else
