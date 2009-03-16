@@ -208,7 +208,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 	int argc;
 	char node[512];
 	char service[512] = DEFAULT_SERVICE;
-	char buf[512];
 	int ret, status, i;
 
 	odprintf("temperhum[main]");
@@ -224,20 +223,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 	}
 
 	odprintf("argc=%d", argc);
-	for (i = 0; i < argc; i++) {
-		ret = snprintf(buf, sizeof(buf), "%S", argv[i]);
-		if (ret < 0)
-			buf[0] = 0;
-		odprintf("argv[%d]=%s", i, buf);
-	}
+	for (i = 0; i < argc; i++)
+		odprintf("argv[%d]=%S", i, argv[i]);
 
 	if (argc < 2 || argc > 3) {
 #if HAVE_GETADDRINFO
-		odprintf("Usage: %s <node (host/ip)> [service (port)]", argv[0]);
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <node (host/ip)> [service (port)]", argv[0]);
+		odprintf("Usage: %S <node (host/ip)> [service (port)]", argv[0]);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %S <node (host/ip)> [service (port)]", argv[0]);
 #else
-		odprintf("Usage: %s <ip> [port]", argv[0]);
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %s <ip> [port]", argv[0]);
+		odprintf("Usage: %S <ip> [port]", argv[0]);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Usage: %S <ip> [port]", argv[0]);
 #endif
 		status = EXIT_FAILURE;
 		goto free_argv;
