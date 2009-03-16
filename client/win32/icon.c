@@ -68,7 +68,7 @@ void icon_blit(unsigned int fg1, unsigned int bg1, unsigned int cx, unsigned int
 
 	odprintf("icon_blit: fg1=#%08x bg1=#%08x cx=%u fg2=#%08x bg2=#%08x sx=%u sy=%u width=%u height=%u data=%p", fg1, bg1, cx, fg2, bg2, sx, sy, width, height, data);
 
-	row_b = (width + ((~width) & 7) + 1) >> 3;
+	row_b = (width + 7) >> 3;
 
 	fg = fg1;
 	bg = bg1;
