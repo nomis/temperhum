@@ -15,7 +15,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#define TITLE "TEMPerHum Tray Icon"
+#define TITLE "TEMPerHum Tray Icon\0"
 #define DEFAULT_SERVICE "21576"
 
 #define WM_APP_NET  (WM_APP+0)

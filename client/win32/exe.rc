@@ -7,9 +7,9 @@
 	FILEVERSION 0, 0, 0, 0
 	PRODUCTVERSION 0, 0, 0, 0
 #if DEBUG > 0
-	FILEFLAGSMASK VS_FF_DEBUG
+	FILEFLAGSMASK GIT_FILEFLAGS_DEBUG
 #else
-	FILEFLAGSMASK 0
+	FILEFLAGSMASK GIT_FILEFLAGS_NORMAL
 #endif
 	FILEOS VOS_NT_WINDOWS32
 	FILETYPE VFT_APP
@@ -19,12 +19,13 @@ BEGIN
 	BEGIN
 		BLOCK "080904B0"
 		BEGIN
-			VALUE "CompanyName", "Simon Arlott\0"
-			VALUE "FileDescription", TITLE"\0"
+			VALUE "Comments", RC_COMMENTS
+			VALUE "CompanyName", GIT_AUTHOR
+			VALUE "FileDescription", TITLE
 			VALUE "FileVersion", GIT_REV
 			VALUE "LegalCopyright", "Copyright ©2009  Simon Arlott\0"
 			VALUE "InternalName", "temperhum\0"
-			VALUE "ProductName", TITLE"\0"
+			VALUE "ProductName", TITLE
 			VALUE "ProductVersion", GIT_REV
 			VALUE "OriginalFilename", "temperhum.exe\0"
 			VALUE "Licence", "Released under the GNU General Public License Version 2\0"
