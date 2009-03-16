@@ -9,7 +9,7 @@ CROSS_COMPILE=i686-mingw32-
 CC=gcc
 DEFINE=-DWINVER=$(VER_WIN) -D_WIN32_WINNT=$(VER_WIN) -D_WIN32_IE=$(VER_IE)
 CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE $(DEFINE) -O2
-LDFLAGS=-lws2_32 -lm
+LDFLAGS=-Wl,-subsystem,windows -lm -lws2_32
 WINDRES=windres
 TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o exe.o
 
