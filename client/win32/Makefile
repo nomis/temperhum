@@ -2,9 +2,13 @@
 .SUFFIXES:
 .SUFFIXES: .c .o .rc
 
+VER_WIN=0x0501
+VER_IE=0x0500
+
 CROSS_COMPILE=i686-mingw32-
 CC=gcc
-CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE -D_WIN32_WINNT=0x0501 -D_WIN32_IE=0x0500 -O2
+DEFINE=-DWINVER=$(VER_WIN) -D_WIN32_WINNT=$(VER_WIN) -D_WIN32_IE=$(VER_IE)
+CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE $(DEFINE) -O2
 LDFLAGS=-lws2_32 -lm
 WINDRES=windres
 TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o exe.o
@@ -17,7 +21,7 @@ clean:
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.rc Makefile
-	$(CROSS_COMPILE)$(WINDRES) -i $< -o $@
+	$(CROSS_COMPILE)$(WINDRES) $(DEFINE) -l 0x0809 -c 0xFDE9 -i $< -o $@
 
 debug.o: debug.h
 icon.o: debug.h icon.h
@@ -27,7 +31,7 @@ comms.o: config.h debug.h temperhum.h tray.h
 exe.o: version.h
 
 version.h:
-	@./mkversion
+	@./mkversion "$(VER_WIN)" "$(VER_IE)"
 
 temperhum.exe: $(TEMPERHUM_OBJS) Makefile
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)

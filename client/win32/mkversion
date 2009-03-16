@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+VER_WIN="$1"
+VER_IE="$2"
 rm -f version.h.tmp version.h
 echo "#define GIT_AUTHOR \"${GIT_AUTHOR_NAME}\\0\"" > version.h.tmp
 set +e
@@ -17,5 +19,7 @@ else
 fi
 : ${USER=unknown}
 : ${HOSTNAME=unknown}
-echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ` by ${USER}@${HOSTNAME}\\0\"" >> version.h.tmp
+GPL_2="`sed -e 's/"/""/g' -e 's/$/\\\\n/' < ../../GPL-2 | tr -d '\n'`"
+echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ` by ${USER}@${HOSTNAME} for Windows ${VER_WIN}+ and IE ${VER_IE}+\\0\"" >> version.h.tmp
+echo "#define RC_GPL_2 \"${GPL_2}\\0\"" >> version.h.tmp
 mv version.h.tmp version.h

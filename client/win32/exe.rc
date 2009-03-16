@@ -17,7 +17,7 @@
 BEGIN
 	BLOCK "StringFileInfo"
 	BEGIN
-		BLOCK "080904B0"
+		BLOCK "0809FDE9"
 		BEGIN
 			VALUE "Comments", RC_COMMENTS
 			VALUE "CompanyName", GIT_AUTHOR
@@ -28,8 +28,11 @@ BEGIN
 			VALUE "ProductName", TITLE
 			VALUE "ProductVersion", GIT_REV
 			VALUE "OriginalFilename", "temperhum.exe\0"
-			VALUE "Licence", "Released under the GNU General Public License Version 2\0"
+			VALUE "Licence", RC_GPL_2
 		END
 	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0809, 0xFDE9
+	END
 END
-
