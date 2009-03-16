@@ -4,3 +4,4 @@ README.html
 *.rrd
 *.o
 *.exe
+version.h

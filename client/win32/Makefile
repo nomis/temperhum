@@ -20,8 +20,11 @@ temperhum.o: config.h debug.h temperhum.h tray.h
 tray.o: config.h debug.h tray.h icon.h temperhum.h digits.h
 comms.o: config.h debug.h temperhum.h tray.h
 
-exe.o: exe.rc
+exe.o: exe.rc version.h
 	$(CROSS_COMPILE)$(WINDRES) -i $< -o $@
+
+version.h: Makefile ../../.git
+	@echo -n "#define GIT_REV \"`git rev-parse --verify HEAD`\\0\"" > version.h
 
 temperhum.exe: $(TEMPERHUM_OBJS) Makefile
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)
