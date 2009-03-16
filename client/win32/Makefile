@@ -11,7 +11,7 @@ DEFINE=-DWINVER=$(VER_WIN) -D_WIN32_WINNT=$(VER_WIN) -D_WIN32_IE=$(VER_IE)
 CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE $(DEFINE) -O2
 LDFLAGS=-Wl,-subsystem,windows -lm -lws2_32
 WINDRES=windres
-TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o exe.o
+TEMPERHUM_OBJS=debug.o tray.o icon.o comms.o temperhum.o app.o
 
 all: temperhum.exe
 clean:
@@ -28,7 +28,7 @@ icon.o: debug.h icon.h
 temperhum.o: config.h debug.h temperhum.h tray.h
 tray.o: config.h debug.h tray.h icon.h temperhum.h digits.h
 comms.o: config.h debug.h temperhum.h tray.h
-exe.o: version.h
+app.o: version.h
 
 version.h:
 	@./mkversion "$(VER_WIN)" "$(VER_IE)"
