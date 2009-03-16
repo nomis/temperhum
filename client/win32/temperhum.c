@@ -210,7 +210,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 	char service[512] = DEFAULT_SERVICE;
 	int ret, status, i;
 
-	odprintf("temperhum[main]");
+	odprintf("temperhum[main]: _WIN32_WINNT=%04x _WIN32_IE=%04x", _WIN32_WINNT, _WIN32_IE);
 
 	SetLastError(0);
 	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
