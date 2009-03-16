@@ -1,4 +1,6 @@
 .PHONY: all clean
+.SUFFIXES:
+.SUFFIXES: .c .o
 
 CROSS_COMPILE=i686-mingw32-
 CC=gcc
