@@ -114,10 +114,12 @@ void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned in
 
 	odprintf("icon_clear: bg1=#%08x cx=%u bg2=#%08x sx=%u sy=%u width=%u height=%u", bg1, cx, bg2, sx, sy, width, height);
 
+	/* use first colour scheme */
 	bg = bg1;
 
 	for (x = sx; sx < sx+width && x < ICON_WIDTH; x++) {
-		if (x == cx)
+		/* change to second colour scheme */
+		if (x >= cx)
 			bg = bg2;
 
 		for (y = sy; sy < sy+height && y < ICON_HEIGHT; y++)
