@@ -23,7 +23,7 @@ BEGIN
 			VALUE "CompanyName", GIT_AUTHOR
 			VALUE "FileDescription", TITLE
 			VALUE "FileVersion", GIT_REV
-			VALUE "LegalCopyright", "Copyright ©2009  Simon Arlott\0"
+			VALUE "LegalCopyright", "Copyright \xA92009  Simon Arlott\0"
 			VALUE "InternalName", "temperhum\0"
 			VALUE "ProductName", TITLE
 			VALUE "ProductVersion", GIT_REV
