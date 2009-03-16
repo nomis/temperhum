@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+rm -f version.h.tmp version.h
+echo "#define GIT_AUTHOR \"${GIT_AUTHOR_NAME}\\0\"" > version.h.tmp
+set +e
+git update-index --refresh --unmerged >/dev/null
+RET=$?
+set -e
+if [[ $RET -eq 0 ]]; then
+	echo "#define GIT_REV \"`git rev-parse --verify HEAD`\\0\"" >> version.h.tmp
+	echo "#define GIT_FILEFLAGS_NORMAL 0" >> version.h.tmp
+	echo "#define GIT_FILEFLAGS_DEBUG VS_FF_DEBUG" >> version.h.tmp
+else
+	echo "#define GIT_REV \"`git rev-parse --verify HEAD`-dirty\\0\"" >> version.h.tmp
+	echo "#define GIT_FILEFLAGS_NORMAL VS_FF_PATCHED" >> version.h.tmp
+	echo "#define GIT_FILEFLAGS_DEBUG VS_FF_DEBUG|VS_FF_PATCHED" >> version.h.tmp
+fi
+: ${USER=unknown}
+: ${HOSTNAME=unknown}
+echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ` by ${USER}@${HOSTNAME}\\0\"" >> version.h.tmp
+mv version.h.tmp version.h

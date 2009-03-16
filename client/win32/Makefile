@@ -26,19 +26,8 @@ tray.o: config.h debug.h tray.h icon.h temperhum.h digits.h
 comms.o: config.h debug.h temperhum.h tray.h
 exe.o: version.h
 
-version.h: Makefile ../../.git
-	@rm -f version.h.tmp version.h
-	@touch version.h.tmp
-	@echo "#define GIT_AUTHOR \"$(GIT_AUTHOR_NAME)\\0\"" >> version.h.tmp
-	@git update-index --refresh --unmerged >/dev/null \
-		|| (echo "#define GIT_REV \"`git rev-parse --verify HEAD`-dirty\\0\"" >> version.h.tmp; \
-			echo "#define GIT_FILEFLAGS_NORMAL VS_FF_PATCHED" >> version.h.tmp; \
-			echo "#define GIT_FILEFLAGS_DEBUG VS_FF_DEBUG|VS_FF_PATCHED" >> version.h.tmp) \
-		|| (echo "#define GIT_REV \"`git rev-parse --verify HEAD`\\0\"" >> version.h.tmp; \
-			echo "#define GIT_FILEFLAGS_NORMAL 0" >> version.h.tmp; \
-			echo "#define GIT_FILEFLAGS_DEBUG VS_FF_DEBUG" >> version.h.tmp)
-	@echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ` by `whoami`@`hostname`\\0\"" >> version.h.tmp
-	@mv version.h.tmp version.h
+version.h:
+	@./mkversion
 
 temperhum.exe: $(TEMPERHUM_OBJS) Makefile
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -o temperhum.exe $(TEMPERHUM_OBJS) $(LDFLAGS)
