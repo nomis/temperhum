@@ -19,7 +19,7 @@ else
 fi
 : ${USER=unknown}
 : ${HOSTNAME=unknown}
-GPL_2="`sed -e 's/"/""/g' -e 's/$/\\\\n/' < ../../GPL-2 | tr -d '\n'`"
+GPL_2="`sed -e 's/"/""/g' -e 's/$/\\\\r\\\\n/' < ../../GPL-2 | tr -d '\n'`"
 echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ` by ${USER}@${HOSTNAME} for Windows ${VER_WIN}+ and IE ${VER_IE}+\\0\"" >> version.h.tmp
 echo "#define RC_GPL_2 \"${GPL_2}\\0\"" >> version.h.tmp
 mv version.h.tmp version.h
