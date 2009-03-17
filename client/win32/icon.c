@@ -20,7 +20,7 @@
 #include "debug.h"
 #include "icon.h"
 
-static unsigned char icon_and[ICON_WIDTH * ICON_HEIGHT * ICON_DEPTH_BYTES];
+static unsigned char icon_and[(ICON_WIDTH * ICON_HEIGHT) >> 3];
 static unsigned char icon_buf[ICON_WIDTH * ICON_HEIGHT * ICON_DEPTH_BYTES];
 static int icon_init = 0;
 
