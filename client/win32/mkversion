@@ -20,6 +20,6 @@ fi
 : ${USER=unknown}
 : ${HOSTNAME=unknown}
 GPL_2="`sed -e 's/"/""/g' -e 's/$/\\\\r\\\\n/' < ../../GPL-2 | tr -d '\n'`"
-echo "#define RC_COMMENTS \"Built `date --utc +%FT%TZ`\r\nBy ${USER}@${HOSTNAME}\r\n_WIN32_WINNT=${VER_WIN}\r\n_WIN32_IE=${VER_IE}\\0\"" >> version.h.tmp
+echo "#define RC_COMMENTS \"`date --utc +%FT%TZ`\r\n_WIN32_WINNT=${VER_WIN}\r\n_WIN32_IE=${VER_IE}\\0\"" >> version.h.tmp
 echo "#define RC_GPL_2 \"${GPL_2}\\0\"" >> version.h.tmp
 mv version.h.tmp version.h
