@@ -28,7 +28,7 @@ static inline void icon_set(unsigned int x, unsigned int y, unsigned int c) {
 	unsigned int d;
 
 	for (d = 0; d < ICON_DEPTH_BYTES; d++)
-		icon_buf[y * (ICON_WIDTH * ICON_DEPTH_BYTES) + x * ICON_DEPTH_BYTES + d] = (c >> (ICON_DEPTH_BITS - ((d + 1) << 3))) & 0xFF;
+		icon_buf[y * (ICON_WIDTH * ICON_DEPTH_BYTES) + x * ICON_DEPTH_BYTES + d] = (c >> (d << 3)) & 0xFF;
 }
 
 HICON icon_create(HINSTANCE hInstance) {

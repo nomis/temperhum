@@ -109,8 +109,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 	odprintf("tray[update]: conn=%d msg=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
 		status->conn, status->msg, status->temperature_celsius, status->relative_humidity, status->dew_point);
 
-	fg = 0;
-	bg = ~0;
+	fg = 0xff000000;
+	bg = 0xffffffff;
 
 	switch (status->conn) {
 	case NOT_CONNECTED:
