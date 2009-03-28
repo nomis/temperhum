@@ -66,6 +66,7 @@ struct th_data {
 	unsigned int parse_pos;
 	int def_sensor;
 
+	UINT taskbarCreated;
 	NOTIFYICONDATA niData;
 	int tray_ok;
 	struct tray_status status;

@@ -34,9 +34,40 @@
 #include "connecting.xbm"
 #include "not_connected.xbm"
 
-void tray_init(struct th_data *data) {
+int tray_init(struct th_data *data) {
+	UINT ret;
+	DWORD err;
+
+	odprintf("tray[init]");
+
 	data->status.conn = NOT_CONNECTED;
 	data->tray_ok = 0;
+
+	SetLastError(0);
+	ret = RegisterWindowMessage(TEXT("TaskbarCreated"));
+	err = GetLastError();
+	odprintf("RegisterMessageWindow: %u (%ld)", ret, err);
+	if (ret == 0) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to register TaskbarCreated message (%ld)", err);
+		return 1;
+	} else {
+		data->taskbarCreated = ret;
+		return 0;
+	}
+}
+
+void tray_reset(HWND hWnd, struct th_data *data) {
+	odprintf("tray[reset]");
+
+	/* Try this anyway... */
+	tray_remove(hWnd, data);
+
+	/* Assume it has been removed */
+	data->tray_ok = 0;
+
+	/* Add it again */
+	tray_add(hWnd, data);
+	tray_update(hWnd, data);
 }
 
 void tray_add(HWND hWnd, struct th_data *data) {

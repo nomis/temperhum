@@ -50,27 +50,33 @@ int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
 	data.node = node;
 	data.service = service;
 
-	tray_init(&data);
-	tray_add(hWnd, &data);
-	tray_update(hWnd, &data);
-
-	ret = comms_init(&data);
-	odprintf("comms_init: %d", ret);
+	ret = tray_init(&data);
+	odprintf("tray_init: %d", ret);
 	if (ret != 0) {
 		data.running = 0;
 		status = EXIT_FAILURE;
 	} else {
-		data.running = 1;
-		status = EXIT_SUCCESS;
+		tray_add(hWnd, &data);
+		tray_update(hWnd, &data);
 
-		SetLastError(0);
-		ret = PostMessage(hWnd, WM_APP_NET, 0, NET_MSG_CONNECT);
-		err = GetLastError();
-		odprintf("PostMessage: %d (%ld)", ret, err);
-		if (ret == 0) {
+		ret = comms_init(&data);
+		odprintf("comms_init: %d", ret);
+		if (ret != 0) {
 			data.running = 0;
 			status = EXIT_FAILURE;
-			mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to post initial connect message (%ld)", err);
+		} else {
+			data.running = 1;
+			status = EXIT_SUCCESS;
+
+			SetLastError(0);
+			ret = PostMessage(hWnd, WM_APP_NET, 0, NET_MSG_CONNECT);
+			err = GetLastError();
+			odprintf("PostMessage: %d (%ld)", ret, err);
+			if (ret == 0) {
+				data.running = 0;
+				status = EXIT_FAILURE;
+				mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to post initial connect message (%ld)", err);
+			}
 		}
 	}
 
@@ -191,6 +197,10 @@ LRESULT CALLBACK temperhum_window(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 			return TRUE;
 		}
 		break;
+
+	default:
+		if (uMsg == data->taskbarCreated)
+			tray_reset(hWnd, data);
 	}
 
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -274,8 +284,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 		goto free_argv;
 	}
 
+	/* Can't use HWND_MESSAGE... because it won't receive broadcasts like TaskbarCreated */
 	SetLastError(0);
-	hWnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hInstance, NULL);
+	hWnd = CreateWindowEx(0, wcx.lpszClassName, TITLE, 0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, /*HWND_MESSAGE*/ NULL, NULL, hInstance, NULL);
 	err = GetLastError();
 	odprintf("CreateWindowEx: %p (%ld)", hWnd, err);
 	if (hWnd == NULL) {

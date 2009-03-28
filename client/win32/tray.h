@@ -17,7 +17,8 @@
 
 #define TRAY_ID 1
 
-void tray_init(struct th_data *data);
+int tray_init(struct th_data *data);
+void tray_reset(HWND hWnd, struct th_data *data);
 void tray_add(HWND hWnd, struct th_data *data);
 void tray_update(HWND hWnd, struct th_data *data);
 BOOL tray_activity(HWND hWnd, struct th_data *data, WPARAM wParam, LPARAM lParam);
