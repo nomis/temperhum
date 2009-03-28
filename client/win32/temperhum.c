@@ -209,6 +209,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 	char node[512];
 	char service[512] = DEFAULT_SERVICE;
 	int ret, status, i;
+	(void)hInstancePrev;
+	(void)lpCmdLine;
+	(void)nShowCmd;
 
 	odprintf("temperhum[main]: _WIN32_WINNT=%04x _WIN32_IE=%04x", _WIN32_WINNT, _WIN32_IE);
 
@@ -314,7 +317,7 @@ free_argv:
 	SetLastError(0);
 	retp = LocalFree(argv);
 	err = GetLastError();
-	odprintf("LocalFree: %p (%ld)", ret, err);
+	odprintf("LocalFree: %p (%ld)", retp, err);
 
 done:
 	exit(status);
