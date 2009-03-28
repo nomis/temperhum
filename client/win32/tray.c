@@ -140,8 +140,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 	odprintf("tray[update]: conn=%d msg=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
 		status->conn, status->msg, status->temperature_celsius, status->relative_humidity, status->dew_point);
 
-	fg = 0xff000000;
-	bg = 0xffffffff;
+	fg = 0x000000;
+	bg = 0xffffff;
 
 	switch (status->conn) {
 	case NOT_CONNECTED:
@@ -342,7 +342,7 @@ void tray_update(HWND hWnd, struct th_data *data) {
 	oldIcon = niData->hIcon;
 
 	niData->uFlags &= ~NIF_ICON;
-	niData->hIcon = icon_create(data->hInstance);
+	niData->hIcon = icon_create();
 	if (niData->hIcon != NULL)
 		niData->uFlags |= NIF_ICON;
 

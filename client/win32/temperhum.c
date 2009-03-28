@@ -25,6 +25,7 @@
 #include "debug.h"
 #include "temperhum.h"
 #include "comms.h"
+#include "icon.h"
 #include "tray.h"
 
 int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
@@ -50,35 +51,38 @@ int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
 	data.node = node;
 	data.service = service;
 
+	data.running = 0;
+	status = EXIT_FAILURE;
+
+	ret = icon_init();
+	odprintf("icon_init: %d", ret);
+	if (ret != 0)
+		goto fail_icon;
+
 	ret = tray_init(&data);
 	odprintf("tray_init: %d", ret);
-	if (ret != 0) {
-		data.running = 0;
-		status = EXIT_FAILURE;
-	} else {
-		tray_add(hWnd, &data);
-		tray_update(hWnd, &data);
+	if (ret != 0)
+		goto fail_tray;
 
-		ret = comms_init(&data);
-		odprintf("comms_init: %d", ret);
-		if (ret != 0) {
-			data.running = 0;
-			status = EXIT_FAILURE;
-		} else {
-			data.running = 1;
-			status = EXIT_SUCCESS;
+	tray_add(hWnd, &data);
+	tray_update(hWnd, &data);
 
-			SetLastError(0);
-			ret = PostMessage(hWnd, WM_APP_NET, 0, NET_MSG_CONNECT);
-			err = GetLastError();
-			odprintf("PostMessage: %d (%ld)", ret, err);
-			if (ret == 0) {
-				data.running = 0;
-				status = EXIT_FAILURE;
-				mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to post initial connect message (%ld)", err);
-			}
-		}
+	ret = comms_init(&data);
+	odprintf("comms_init: %d", ret);
+	if (ret != 0)
+		goto fail_comms;
+
+	SetLastError(0);
+	ret = PostMessage(hWnd, WM_APP_NET, 0, NET_MSG_CONNECT);
+	err = GetLastError();
+	odprintf("PostMessage: %d (%ld)", ret, err);
+	if (ret == 0) {
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to post initial connect message (%ld)", err);
+		goto fail_connect;
 	}
+
+	data.running = 1;
+	status = EXIT_SUCCESS;
 
 	while (data.running) {
 		SetLastError(0);
@@ -110,9 +114,16 @@ int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
 		DispatchMessage(&msg);
 	}
 
+fail_connect:
 	comms_destroy(&data);
+
+fail_comms:
 	tray_remove(hWnd, &data);
 
+fail_tray:
+	icon_free();
+
+fail_icon:
 	SetLastError(0);
 	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)NULL);
 	err = GetLastError();

@@ -20,42 +20,167 @@
 #include "debug.h"
 #include "icon.h"
 
-static unsigned char icon_and[(ICON_WIDTH * ICON_HEIGHT) >> 3];
-static unsigned char icon_buf[ICON_WIDTH * ICON_HEIGHT * ICON_DEPTH_BYTES];
-static int icon_init = 0;
+static HBITMAP hbmMask;
+static unsigned char icon_and[ICON_HEIGHT * ICON_MASK_SCANLINE_BYTES];
+static unsigned char icon_buf[ICON_HEIGHT * ICON_DATA_SCANLINE_BYTES];
 
 static inline void icon_set(unsigned int x, unsigned int y, unsigned int c) {
 	unsigned int d;
 
 	for (d = 0; d < ICON_DEPTH_BYTES; d++)
-		icon_buf[y * (ICON_WIDTH * ICON_DEPTH_BYTES) + x * ICON_DEPTH_BYTES + d] = (c >> (d << 3)) & 0xFF;
+		icon_buf[y * ICON_DATA_SCANLINE_BYTES + x * ICON_DEPTH_BYTES + d] = (c >> (d << 3)) & 0xFF;
 }
 
-HICON icon_create(HINSTANCE hInstance) {
-	HICON icon;
+static inline unsigned int icon_bpp_adjust(unsigned int c) {
+#if ICON_DEPTH_BITS == 32
+	/* Ignore transparency */
+	return c & 0xff000000;
+#elif ICON_DEPTH_BITS == 24
+	return c;
+#elif ICON_DEPTH_BITS == 16
+	return ((c >> 9) & 0x7c00) | ((c >> 5) & 0x7c0) | (c >> 3);
+#else
+#	error "Unable to handle icon bit depth"
+#endif
+}
+
+int icon_init(void) {
 	DWORD err;
 
-	if (!icon_init) {
-		memset(icon_and, 0, sizeof(icon_and));
-		icon_init = 1;
-	}
+	odprintf("icon[init]");
+
+	memset(icon_and, 0, sizeof(icon_and));
 
 	SetLastError(0);
-	icon = CreateIcon(hInstance, ICON_WIDTH, ICON_HEIGHT, 1, ICON_DEPTH_BITS, icon_and, icon_buf);
+	hbmMask = CreateBitmap(ICON_WIDTH, ICON_HEIGHT, 1, 1, icon_and);
 	err = GetLastError();
-	odprintf("CreateIcon: %p (%ld)", icon, err);
+	odprintf("CreateBitmap: %p (%ld)", hbmMask, err);
 
+	if (hbmMask == NULL)
+		return 1;
+	return 0;
+}
+
+void icon_free(void) {
+	BOOL retb;
+	DWORD err;
+
+	odprintf("icon[free]");
+
+	SetLastError(0);
+	retb = DeleteObject(hbmMask);
+	err = GetLastError();
+	odprintf("DeleteObject: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
+}
+
+HICON icon_create(void) {
+	HDC hdc, hdcMem;
+	HBITMAP hbmOld, hbmIcon;
+	BITMAPINFO bmi;
+	ICONINFO iinfo;
+	HICON icon = NULL;
+	BOOL retb;
+	INT ret;
+	DWORD err;
+
+	odprintf("icon[create]");
+
+	SetLastError(0);
+	hdc = GetDC(NULL);
+	err = GetLastError();
+	odprintf("GetDC: %p (%ld)", hdc, err);
+	if (hdc == NULL)
+		goto failed;
+
+	SetLastError(0);
+	hdcMem = CreateCompatibleDC(hdc);
+	err = GetLastError();
+	odprintf("CreateCompatibleDC: %p (%ld)", hdcMem, err);
+	if (hdcMem == NULL)
+		goto release_hdc;
+
+	SetLastError(0);
+	hbmIcon = CreateCompatibleBitmap(hdc, ICON_WIDTH, ICON_HEIGHT);
+	err = GetLastError();
+	odprintf("CreateCompatibleBitmap: %p (%ld)", hbmIcon, err);
+	if (hbmIcon == NULL)
+		goto delete_hdcMem;
+
+	SetLastError(0);
+	hbmOld = SelectObject(hdcMem, hbmIcon);
+	err = GetLastError();
+	odprintf("SelectObject: %p (%ld)", hbmOld, err);
+	if (hbmOld == NULL)
+		goto delete_hbmIcon;
+
+	bmi.bmiHeader.biSize = sizeof(bmi.bmiHeader);
+	bmi.bmiHeader.biWidth = ICON_WIDTH;
+	bmi.bmiHeader.biHeight = -ICON_HEIGHT;
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = ICON_DEPTH_BITS;
+	bmi.bmiHeader.biCompression = BI_RGB;
+	bmi.bmiHeader.biSizeImage = sizeof(icon_buf);
+	bmi.bmiHeader.biXPelsPerMeter = 0;
+	bmi.bmiHeader.biYPelsPerMeter = 0;
+	bmi.bmiHeader.biClrUsed = 0;
+	bmi.bmiHeader.biClrImportant = 0;
+
+	SetLastError(0);
+	ret = SetDIBits(hdcMem, hbmIcon, 0, ICON_HEIGHT, icon_buf, &bmi, DIB_RGB_COLORS);
+	err = GetLastError();
+	odprintf("SetDIBits: %d (%ld)", ret, err);
+
+	SetLastError(0);
+	hbmOld = SelectObject(hdcMem, hbmOld);
+	err = GetLastError();
+	odprintf("SelectObject: %p (%ld)", hbmOld, err);
+
+	if (ret != ICON_HEIGHT)
+		goto delete_hbmIcon;
+
+	iinfo.fIcon = TRUE;
+	iinfo.xHotspot = 0;
+	iinfo.yHotspot = 0;
+	iinfo.hbmMask = hbmMask;
+	iinfo.hbmColor = hbmIcon;
+
+	SetLastError(0);
+	icon = CreateIconIndirect(&iinfo);
+	err = GetLastError();
+	odprintf("CreateIconIndirect: %p (%ld)", icon, err);
+
+delete_hbmIcon:
+	SetLastError(0);
+	retb = DeleteObject(hbmIcon);
+	err = GetLastError();
+	odprintf("DeleteObject: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
+
+delete_hdcMem:
+	SetLastError(0);
+	retb = DeleteDC(hdcMem);
+	err = GetLastError();
+	odprintf("DeleteDC: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
+
+release_hdc:
+	SetLastError(0);
+	ret = ReleaseDC(NULL, hdc);
+	err = GetLastError();
+	odprintf("ReleaseDC: %d (%ld)", ret, err);
+
+failed:	
 	return icon;
 }
 
 void icon_destroy(HICON hIcon) {
-	INT ret;
+	BOOL retb;
 	DWORD err;
 
+	odprintf("icon[destroy]: %p", hIcon);
+
 	SetLastError(0);
-	ret = DestroyIcon(hIcon);
+	retb = DestroyIcon(hIcon);
 	err = GetLastError();
-	odprintf("DestroyIcon: %d (%ld)", ret, err);
+	odprintf("DestroyIcon: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
 
 	/* if it failed, am I supposed to keep it around forever and try again? */
 }
@@ -66,10 +191,16 @@ void icon_blit(unsigned int fg1, unsigned int bg1, unsigned int cx, unsigned int
 	unsigned int row_b, col_b;
 	unsigned int c, px, py;
 
-	odprintf("icon_blit: fg1=#%08x bg1=#%08x cx=%u fg2=#%08x bg2=#%08x sx=%u sy=%u width=%u height=%u data=%p", fg1, bg1, cx, fg2, bg2, sx, sy, width, height, data);
+	odprintf("icon[blit]: fg1=#%08x bg1=#%08x cx=%u fg2=#%08x bg2=#%08x sx=%u sy=%u width=%u height=%u data=%p", fg1, bg1, cx, fg2, bg2, sx, sy, width, height, data);
 
 	/* row width in bytes */
 	row_b = (width + 7) >> 3;
+
+	/* adjust colours for bpp */
+	fg1 = icon_bpp_adjust(fg1);
+	bg1 = icon_bpp_adjust(bg1);
+	fg2 = icon_bpp_adjust(fg2);
+	bg2 = icon_bpp_adjust(bg2);
 
 	/* use first colour scheme */
 	fg = fg1;
@@ -104,7 +235,10 @@ void icon_blit(unsigned int fg1, unsigned int bg1, unsigned int cx, unsigned int
 }
 
 void icon_wipe(unsigned int bg) {
-	odprintf("icon_wipe: bg=#%08x", bg);
+	odprintf("icon[wipe]: bg=#%08x", bg);
+
+	/* adjust colour for bpp */
+	bg = icon_bpp_adjust(bg);
 
 	icon_clear(0, 0, bg, 0, 0, ICON_WIDTH, ICON_HEIGHT);
 }
@@ -112,7 +246,11 @@ void icon_wipe(unsigned int bg) {
 void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned int sx, unsigned int sy, unsigned int width, unsigned int height) {
 	unsigned int x, y, bg;
 
-	odprintf("icon_clear: bg1=#%08x cx=%u bg2=#%08x sx=%u sy=%u width=%u height=%u", bg1, cx, bg2, sx, sy, width, height);
+	odprintf("icon[clear]: bg1=#%08x cx=%u bg2=#%08x sx=%u sy=%u width=%u height=%u", bg1, cx, bg2, sx, sy, width, height);
+
+	/* adjust colours for bpp */
+	bg1 = icon_bpp_adjust(bg1);
+	bg2 = icon_bpp_adjust(bg2);
 
 	/* use first colour scheme */
 	bg = bg1;

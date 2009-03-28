@@ -10,7 +10,7 @@ CROSS_COMPILE_CFLAGS=
 CC=gcc
 DEFINE=-DWINVER=$(VER_WIN) -D_WIN32_WINNT=$(VER_WIN) -D_WIN32_IE=$(VER_IE)
 CFLAGS=-Wall -Wextra -Wshadow -D_ISOC99_SOURCE $(DEFINE) -O2
-LDFLAGS=-Wl,-subsystem,windows -lm -lws2_32
+LDFLAGS=-Wl,-subsystem,windows -lm -lws2_32 -lgdi32
 
 WINDRES=windres
 WINDRES_LANG=-l 0x0809

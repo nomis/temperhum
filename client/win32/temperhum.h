@@ -66,6 +66,8 @@ struct th_data {
 	unsigned int parse_pos;
 	int def_sensor;
 
+	HBITMAP hbmMask;
+
 	UINT taskbarCreated;
 	NOTIFYICONDATA niData;
 	int tray_ok;
