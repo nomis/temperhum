@@ -316,13 +316,13 @@ destroy_window:
 	SetLastError(0);
 	retb = DestroyWindow(hWnd);
 	err = GetLastError();
-	odprintf("DestroyWindow: %d (%ld)", retb, err);
+	odprintf("DestroyWindow: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
 
 unregister_class:
 	SetLastError(0);
 	retb = UnregisterClass(wcx.lpszClassName, hInstance);
 	err = GetLastError();
-	odprintf("UnregisterClass: %d (%ld)", retb, err);
+	odprintf("UnregisterClass: %s (%ld)", retb == TRUE ? "TRUE" : "FALSE", err);
 
 free_argv:
 	SetLastError(0);
