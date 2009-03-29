@@ -93,7 +93,7 @@ double sht1x_sample(struct sht1x_device *dev, struct sht1x_readings readings, in
 		rh_lin = C1 + (C2 * rh) + (C3 * rh * rh);
 		rh_true = (readings.temperature_celsius - 25.0) * (T1 + (T2 * rh)) + rh_lin;
 
-		if (rh_true > 99.0)
+		if (rh_true > 100.0)
 			rh_true = 100.0;
 		if (rh_true < 0.1)
 			rh_true = 0.1;
