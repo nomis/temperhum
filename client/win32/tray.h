@@ -35,10 +35,10 @@
  * The Workplace (Health, Safety and Welfare) Regulations 1992,
  * Approved Code of Practise states:
  *
- * Minimum temperature: 16℃C (13℃C for "severe physical effort")
+ * Minimum temperature: 16℃ (13℃ for "severe physical effort")
  * Maximum temperature: undefined
  *
- * The previous HSE definition was: 13℃C to 30℃C is "acceptable"
+ * The previous HSE definition was: 13℃ to 30℃ is "acceptable"
  * 
  * http://www.hse.gov.uk/temperature/thermal/faq.htm
  * Last-Modified: 2009-02-03
@@ -56,13 +56,13 @@
  * Human reaction to high dew points
  * ---------------------------------
  *
- *      >24℃C: Extremely uncomfortable, oppressive
- *  21 - 24℃C: Very humid, quite uncomfortable
- *  18 - 21℃C: Somewhat uncomfortable for most people at upper edge
- *  16 - 18℃C: OK for most, but all perceive the humidity at upper edge
- *  13 - 16℃C: Comfortable
- *  10 - 12℃C: Very comfortable
- * <10℃C     : A bit dry for some
+ *      >24℃: Extremely uncomfortable, oppressive
+ *  21 - 24℃: Very humid, quite uncomfortable
+ *  18 - 21℃: Somewhat uncomfortable for most people at upper edge
+ *  16 - 18℃: OK for most, but all perceive the humidity at upper edge
+ *  13 - 16℃: Comfortable
+ *  10 - 12℃: Very comfortable
+ * <10℃     : A bit dry for some
  *
  * http://en.wikipedia.org/wiki/Dew_point
  * Last-Modified: 2009-03-24 (id=279476292)
