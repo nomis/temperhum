@@ -1,6 +1,9 @@
 all: README.html
 clean:
 	rm -f README.html
+	$(MAKE) -C src/ clean
+	$(MAKE) -C server/ clean
+	$(MAKE) -C client/win32/ clean
 
 README.html: README Makefile
 	sed \
