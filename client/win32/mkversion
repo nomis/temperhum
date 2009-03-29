@@ -20,11 +20,7 @@ fi
 : ${USER=unknown}
 : ${HOSTNAME=unknown}
 NOW="`date --utc +%FT%TZ`"
-echo "#ifdef _WIN64" >> version.h.tmp
-echo "# define RC_COMMENTS \"${NOW}\r\n_WIN32_WINNT=${VER_WIN}\r\n_WIN32_IE=${VER_IE}\r\n_WIN64\\0\"" >> version.h.tmp
-echo "#else" >> version.h.tmp
-echo "# define RC_COMMENTS \"${NOW}\r\n_WIN32_WINNT=${VER_WIN}\r\n_WIN32_IE=${VER_IE}\r\n_WIN32\\0\"" >> version.h.tmp
-echo "#endif" >> version.h.tmp
+echo "#define RC_COMMENTS \"${NOW}\r\n_WIN32_WINNT=${VER_WIN}\r\n_WIN32_IE=${VER_IE}\\0\"" >> version.h.tmp
 GPL_2="`sed -e 's/"/""/g' -e 's/$/\\\\r\\\\n/' < ../../GPL-2 | tr -d '\n'`"
 echo "#define RC_GPL_2 \"${GPL_2}\\0\"" >> version.h.tmp
 mv version.h.tmp version.h
