@@ -202,8 +202,10 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 			icon_clear(h_bg, h_end, bg, 0, 0, ICON_WIDTH, digits_base_height);
 
-			if (tc > 9999) {
+			if (tc >= 9995) {
 				/* _NNN 100 to 999 */
+				if (tc % 100 >= 50)
+					tc += 100 - (tc % 100);
 				p = digit_dot_width + 1;
 
 				d = (tc/10000) % 10;
@@ -218,6 +220,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 				icon_blit(h_fg, h_bg, h_end, fg, bg, p, 0, digits_width[d], digits_height[d], digits_bits[d]);
 			} else if (tc > 999) {
 				/* NN.N 10.0 to 99.9 */
+				if (tc % 10 >= 5)
+					tc += 10 - (tc % 10);
 				p = 0;
 
 				d = (tc/1000) % 10;
@@ -250,8 +254,10 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 				d = tc % 10;
 				icon_blit(h_fg, h_bg, h_end, fg, bg, p, 0, digits_width[d], digits_height[d], digits_bits[d]);
-			} else if (tc >= -999) { 
+			} else if (tc > -995) { 
 				/* -N.N -0.1 to -9.9 */
+				if (abs(tc) % 10 >= 5)
+					tc -= 10 - (abs(tc) % 10);
 				p = 0;
 
 				icon_blit(h_fg, h_bg, h_end, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
@@ -268,6 +274,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 				icon_blit(h_fg, h_bg, h_end, fg, bg, p, 0, digits_width[d], digits_height[d], digits_bits[d]);
 			} else /* if (tc >= -9999) */ {
 				/* _-NN -10 to -99 */
+				if (abs(tc) % 100 >= 50)
+					tc -= 100 - (abs(tc) % 100);
 				p = digit_dot_width + 1;
 
 				icon_blit(h_fg, h_bg, h_end, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
