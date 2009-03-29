@@ -120,10 +120,16 @@ HICON icon_create(void) {
 	bmi.bmiHeader.biBitCount = ICON_DEPTH_BITS;
 	bmi.bmiHeader.biCompression = BI_RGB;
 	bmi.bmiHeader.biSizeImage = sizeof(icon_buf);
-	bmi.bmiHeader.biXPelsPerMeter = 0;
+	bmi.bmiHeader.biXPelsPerMeter = 0; /* Per metre? That's a lot of pixels... */
 	bmi.bmiHeader.biYPelsPerMeter = 0;
 	bmi.bmiHeader.biClrUsed = 0;
 	bmi.bmiHeader.biClrImportant = 0;
+
+	/* "bmiColours" should be set to "NULL" according to MSDN. Thanks. */
+	bmi.bmiColors[0].rgbBlue = 0;
+	bmi.bmiColors[0].rgbGreen = 0;
+	bmi.bmiColors[0].rgbRed = 0;
+	bmi.bmiColors[0].rgbReserved = 0;
 
 	SetLastError(0);
 	ret = SetDIBits(hdcMem, hbmIcon, 0, ICON_HEIGHT, icon_buf, &bmi, DIB_RGB_COLORS);
