@@ -62,7 +62,7 @@ filename.
  $ ls -1 /sys/bus/usb/devices/*/ttyUSB* -d|cut -d / -f 6|cut -d : -f 1
  1-1.1.3
 
-Run the main process:
+Run the main process (in src/):
 
  $ ./temperhum 1-1.1.3
  ; Status {Battery: OK, Heater: OFF, Reload: YES, Resolution: HIGH }
@@ -74,6 +74,20 @@ Run the main process:
 It's also possible to specify more than one device. If you try to access
 multiple devices concurrently, you'll soon run into problems with invalid
 data due to the timing involved.
+	
+	
+= Networking =
+	
+There's a Linux service to provide realtime information from one or more
+sensors (in server/) which uses a simple protocol. The last 5 seconds of
+data is averaged and sent to all connected clients.
+
+To display the information from one (default) sensor, in client/win32/
+is a Windows executable to output the current temperature and relative
+humidity as a tray icon. This can be compiled for Win2K+ or WinXP+ (as
+either 32-bit or 64-bit).
+
+Both applications support IPv6 connections.
 	
 	
 = Hardware =
