@@ -29,3 +29,4 @@ void icon_wipe(unsigned int bg);
 void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned int sx, unsigned int sy, unsigned int width, unsigned int height);
 int icon_init(void);
 void icon_free(void);
+unsigned int icon_syscolour(int element);

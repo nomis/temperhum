@@ -34,6 +34,70 @@
 #include "connecting.xbm"
 #include "not_connected.xbm"
 
+/* Returns a number between 0 and 1023 mapped linearly to hue 0 to 80 to 0 */
+static inline unsigned int tray_range_to_hue(double min, double min_warn, double value, double max_warn, double max) {
+	int hue;
+
+	if (value <= min_warn) /* Map min..min_warn to 0..128 */
+		hue = lrint(((value - min) * 128)/(min_warn - min));
+	else if (value >= max_warn) /* Map max_warn..max to 896..1023 */
+		hue = lrint(896 + ((value - max_warn) * 128)/(max - max_warn));
+	else /* Map min_warn..max_warn to 128..896 */
+		hue = lrint(128 + ((value - min_warn) * 768)/(max_warn - min_warn));
+
+	/* Check range */
+	if (value <= min || hue < 0)
+		hue = 0;
+	else if (value >= max || hue > 1023)
+		hue = 1023;
+	return (unsigned int)hue;
+}
+
+/* Converts hues 0-1023 to foreground colour */
+static inline unsigned int tray_hue_to_fg_colour(unsigned int hue) {
+#if 0
+	if (hue < 128) /* Use white from red->orange */
+		return COLOUR_WHITE;
+	else if (hue < 896) /* Use black from orange->green->orange */
+		return COLOUR_BLACK;
+	else /* Use white from orange->red */
+		return COLOUR_WHITE;
+#else
+	(void)hue;
+	return icon_syscolour(COLOR_BTNTEXT);
+#endif
+}
+
+/* Converts hues 0-1023 to background colour */
+static inline unsigned int tray_hue_to_bg_colour(unsigned int hue) {
+	if (hue < 256) /* Increase green until yellow */
+		return (0xff << 24) | (0xff << 16) | (hue << 8);
+	else if (hue < 512) /* Decrease red until green */
+		return (0xff << 24) | ((0xff - (hue - 256)) << 16) | (0xff << 8);
+	else if (hue < 768) /* Increase red until yellow */
+		return (0xff << 24) | ((hue - 512) << 16) | (0xff << 8);
+	else /* Decrease green until red */
+		return (0xff << 24) | (0xff << 16) | ((0xff - (hue - 768)) << 8);
+}
+
+/* Converts hues 0-1023 to pixel width of highlight */
+static inline unsigned int tray_hue_to_width(unsigned int hue) {
+	int w;
+
+	if (hue <= 128) /* Scale from ICON_WIDTH..ICON_WIDTH/3 */
+		w = lrint((double)hue / (128.0/(ICON_WIDTH/3.0)));
+	else if (hue >= 896) /* Scale from ICON_WIDTH*2/3..ICON_WIDTH */
+		w = lrint(ICON_WIDTH*2/3.0 + ((double)hue - 896.0) / (128.0/(ICON_WIDTH/3.0)));
+	else /* Scale from ICON_WIDTH/3..ICON_WIDTH*2/3 */
+		w = lrint(ICON_WIDTH/3.0 + ((double)hue - 128.0) / (768.0/(ICON_WIDTH/3.0)));
+
+	if (w < 1)
+		w = 1;
+	else if (w > ICON_WIDTH)
+		w = ICON_WIDTH;
+	return (unsigned int)w;
+}
+
 int tray_init(struct th_data *data) {
 	UINT ret;
 	DWORD err;
@@ -140,8 +204,8 @@ void tray_update(HWND hWnd, struct th_data *data) {
 	odprintf("tray[update]: conn=%d msg=\"%s\" temperature_celsius=%f relative_humidity=%f dew_point=%f",
 		status->conn, status->msg, status->temperature_celsius, status->relative_humidity, status->dew_point);
 
-	fg = 0x000000;
-	bg = 0xffffff;
+	fg = icon_syscolour(COLOR_BTNTEXT);
+	bg = icon_syscolour(COLOR_3DFACE);
 
 	switch (status->conn) {
 	case NOT_CONNECTED:
@@ -188,7 +252,7 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 			icon_blit(0, 0, 0, fg, bg, p, 0, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
-			unsigned int h_fg, h_bg, h_end;
+			unsigned int h_fg, h_bg, h_end, hue;
 			int tc = lrint(status->temperature_celsius * 100.0);
 
 			if (tc > 99999)
@@ -196,9 +260,10 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			if (tc < -9999)
 				tc = -9999;
 
-			h_end = digits_base_width + 1;
-			h_fg = bg;
-			h_bg = fg;
+			hue = tray_range_to_hue(MIN_TEMPC, MIN_TEMPC_WARN, status->temperature_celsius, MAX_TEMPC_WARN, MAX_TEMPC);
+			h_end = tray_hue_to_width(hue);
+			h_fg = tray_hue_to_fg_colour(hue);
+			h_bg = tray_hue_to_bg_colour(hue);
 
 			icon_clear(h_bg, h_end, bg, 0, 0, ICON_WIDTH, digits_base_height);
 
@@ -307,7 +372,7 @@ void tray_update(HWND hWnd, struct th_data *data) {
 
 			icon_blit(0, 0, 0, fg, bg, p, ICON_HEIGHT - digits_base_height, digit_dash_width, digit_dash_height, digit_dash_bits);
 		} else {
-			unsigned int h_fg, h_bg, h_end;
+			unsigned int h_fg, h_bg, h_end, hue;
 			int rh = lrint(status->relative_humidity * 10.0);
 
 			if (rh > 999)
@@ -315,9 +380,10 @@ void tray_update(HWND hWnd, struct th_data *data) {
 			if (rh < 0)
 				rh = 0;
 
-			h_end = digits_base_width + 1;
-			h_fg = bg;
-			h_bg = fg;
+			hue = tray_range_to_hue(MIN_DEWPC, MIN_DEWPC_WARN, status->dew_point, MAX_DEWPC_WARN, MAX_DEWPC);
+			h_end = tray_hue_to_width(hue);
+			h_fg = tray_hue_to_fg_colour(hue);
+			h_bg = tray_hue_to_bg_colour(hue);
 
 			icon_clear(h_bg, h_end, bg, 0, ICON_HEIGHT - digits_base_height, ICON_WIDTH, digits_base_height);
 

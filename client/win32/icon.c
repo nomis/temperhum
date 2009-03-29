@@ -264,3 +264,8 @@ void icon_clear(unsigned int bg1, unsigned int cx, unsigned int bg2, unsigned in
 			icon_set(x, y, bg);
 	}
 }
+
+unsigned int icon_syscolour(int element) {
+	DWORD rgb = GetSysColor(element);
+	return (0xff << 24) | (GetRValue(rgb) << 16) | (GetGValue(rgb) << 8) | GetBValue(rgb);
+}
