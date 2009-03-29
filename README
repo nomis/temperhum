@@ -102,5 +102,6 @@ EEPROM specification: http://www.microchip.com/ (DS21709J)
 	
 = Linux Driver =
 	
-You'll need this: http://lwn.net/Articles/246334/ until the changes
-are merged to Linus' kernel.
+You'll need Linux 2.6.29-git1 or newer to be able to use these devices
+(commit 664d5df92e88b6ef091048a802b3750f4e989180 adds support for
+DTR/RTS/CTS to the CH341 driver).
