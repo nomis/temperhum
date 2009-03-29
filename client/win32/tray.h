@@ -26,7 +26,11 @@
  * sensor.
  */
 
-/* Health and Safety Executive (UK)
+/* Health and Safety Executive (GBR)
+ *
+ * Temperature -> Thermal comfort -> FAQs
+ * What is the minimum/maximum temperature in the workplace?
+ * ---------------------------------------------------------
  *
  * The Workplace (Health, Safety and Welfare) Regulations 1992,
  * Approved Code of Practise states:
@@ -46,7 +50,11 @@
 #define MAX_TEMPC_WARN 27.0
 #define MAX_TEMPC 30.0
 
-/* English Wikipedia article on Dew Point
+/* Wikimedia Foundation, Inc. (USA)
+ *
+ * English Wikipedia -> Article on Dew Point
+ * Human reaction to high dew points
+ * ---------------------------------
  *
  *      >24℃C: Extremely uncomfortable, oppressive
  *  21 - 24℃C: Very humid, quite uncomfortable
