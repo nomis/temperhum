@@ -39,11 +39,11 @@ int temperhum_run(HINSTANCE hInstance, HWND hWnd, char *node, char *service) {
 	odprintf("temperhum[run]");
 
 	SetLastError(0);
-	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)&data);
+	retlp = SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)&data);
 	err = GetLastError();
 	odprintf("SetWindowLongPtr: %p (%ld)", retlp, err);
 	if (err != 0) {
-		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to set window pointer in GWL_USERDATA (%ld)", err);
+		mbprintf(TITLE, MB_OK|MB_ICONERROR, "Unable to set window pointer in GWLP_USERDATA (%ld)", err);
 		return EXIT_FAILURE;
 	}
 
@@ -125,7 +125,7 @@ fail_tray:
 
 fail_icon:
 	SetLastError(0);
-	retlp = SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)NULL);
+	retlp = SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)NULL);
 	err = GetLastError();
 	odprintf("SetWindowLongPtr: %p (%ld)", retlp, err);
 
@@ -166,7 +166,7 @@ LRESULT CALLBACK temperhum_window(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	DWORD err;
 
 	SetLastError(0);
-	data = (struct th_data*)GetWindowLongPtr(hWnd, GWL_USERDATA);
+	data = (struct th_data*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	err = GetLastError();
 
 	odprintf("temperhum[window]: hWnd=%p (data=%p) msg=%u wparam=%d lparam=%d", hWnd, data, uMsg, wParam, lParam);
