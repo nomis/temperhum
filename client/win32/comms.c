@@ -522,7 +522,7 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 		tray_update(hWnd, data);
 
 		data->s = INVALID_SOCKET;
-		return 0;
+		return 1;
 
 	default:
 		return 0;
