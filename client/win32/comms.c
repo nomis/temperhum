@@ -235,7 +235,7 @@ int comms_connect(HWND hWnd, struct th_data *data) {
 	}
 
 	SetLastError(0);
-	ret = setsockopt(data->s, SOL_SOCKET, SO_RCVTIMEO, (void*)&timeout, sizeof(&timeout));
+	ret = setsockopt(data->s, SOL_SOCKET, SO_RCVTIMEO, (void*)&timeout, sizeof(timeout));
 	err = GetLastError();
 	odprintf("setsockopt: %d (%ld)", ret, err);
 	if (ret != 0) {
