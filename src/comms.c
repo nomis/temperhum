@@ -369,11 +369,11 @@ int sht1x_device_reset(struct sht1x_device *dev) {
 	/* Reset comms */
 	sht1x_conn_reset(dev);
 
+	/* Status register will be reset before the CRC is next used */
+	dev->crc_init = SHT1X_CRC_INIT;
+
 	/* Soft reset */
 	err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_S_RESET);
-
-	/* Status register has been reset */
-	dev->crc_init = SHT1X_CRC_INIT;
 
 	/* Wait */
 	sht1x_startup_delay();
