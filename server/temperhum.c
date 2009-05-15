@@ -22,11 +22,19 @@
 #include <math.h>
 #include <netdb.h>
 #include <rrd.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "temperhum.h"
+
+volatile sig_atomic_t stop = 0;
+
+void th_stop(int sig) {
+	(void)sig;
+	stop = 1;
+}
 
 static int th_send(int fd, char *msg, int flags) {
 	int len = strlen(msg);
@@ -171,7 +179,10 @@ listen_failed:
 	last.tv_sec = 0;
 	last.tv_nsec = 0;
 
-	while(1) {
+	signal(SIGINT, th_stop);
+	signal(SIGTERM, th_stop);
+
+	while(!stop) {
 		fd_set r, w, e;
 		int max, s;
 		struct timeval timeout;

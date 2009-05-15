@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <math.h>
 #include <rrd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +28,13 @@
 
 #include "comms.h"
 #include "readings.h"
+
+volatile sig_atomic_t stop = 0;
+
+void temperhum_stop(int sig) {
+	(void)sig;
+	stop = 1;
+}
 
 void temperhum_rrd_create(char *fname) {
 	struct stat buf;
@@ -168,7 +176,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	while(1) {
+	signal(SIGINT, temperhum_stop);
+	signal(SIGTERM, temperhum_stop);
+
+	while(!stop) {
 		struct sht1x_readings readings;
 		struct timespec tp;
 
