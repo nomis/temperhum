@@ -213,8 +213,8 @@ listen_failed:
 			time_t rrd_end = now.tv_sec - 1;
 			unsigned long rrd_step = 1;
 			unsigned long ds_cnt;
-			char **ds_namv;
-			rrd_value_t *rrd_data;
+			char **ds_namv = NULL;
+			rrd_value_t *rrd_data = NULL;
 			char buf[128];
 
 			buf[sizeof(buf)/sizeof(char) - 1] = 0;
@@ -294,6 +294,11 @@ listen_failed:
 					current_d->readings.dew_point = NAN;
 				else
 					current_d->readings.dew_point /= dp_c;
+
+				for (k = 0; k < ds_cnt; k++)
+					free(ds_namv[k]);
+				free(ds_namv);
+				free(rrd_data);
 			}
 
 			FD_ZERO(&r);
