@@ -209,7 +209,7 @@ void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2) {
 		/* Raise SCK */
 		sht1x_sck(dev, 1);
 
-		/* Lower data */
+		/* Lower DATA */
 		sht1x_out(dev, 0);
 
 		/* Toggle SCK */
@@ -218,7 +218,7 @@ void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2) {
 	if (part2) {
 		sht1x_sck(dev, 1);
 
-		/* Raise data */
+		/* Raise DATA */
 		sht1x_out(dev, 1);
 
 		/* Lower SCK */
@@ -276,7 +276,7 @@ unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 				sht1x_out(dev, 0);
 			} else {
 				/* Raise DATA */
-				sht1x_out(dev, 0);
+				sht1x_out(dev, 1);
 			}
 
 			/* Toggle SCK */
