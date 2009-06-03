@@ -228,6 +228,10 @@ void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2) {
 
 /* Response:
  *   MSB = Success/Failure (timeout)
+ *         0x80, 0: checksum match/data corrected
+ *         0x80, 1: checksum mismatch
+ *         0x01, 0: data unmodified
+ *         0x01, 1: data corrected
  *   --- = Checksum
  *   --- = Value MSB
  *   LSB = Value LSB
@@ -304,8 +308,23 @@ unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 		| (v << 7 & 0x80);
 
 	/* Checksum OK */
-	if ((v & 0xFE) == (dev->crc & 0xFE))
+	if ((v & 0xFE) == (dev->crc & 0xFE)) {
 		v = (v & 0x00FFFFFF);
+	} else if (bytes == 2) {
+		/* Try and correct stuck high bit of low byte */
+		if ((v & 0x8000) != 0) {
+			unsigned int tmp_v = v;
+			unsigned char tmp_crc = orig_crc;
+
+			tmp_v &= ~0x8000;
+			tmp_crc = crc_table[tmp_crc ^ (tmp_v >> 16 & 0x000000FF)];
+			tmp_crc = crc_table[tmp_crc ^ (tmp_v >> 8 & 0x000000FF)];
+
+			if ((v & 0xFE) == (tmp_crc & 0xFE)) {
+				v = (tmp_v & 0x01FFFFFF);
+			}
+		}
+	}
 
 #ifdef DEBUG
 	fprintf(stderr, "%02x/%02x/%08x/%02x/%02x\n", dev->fd, orig_crc, (v & 0xFF000000) | (d_v & 0x00FFFFFF), v & 0xFF, dev->crc);
