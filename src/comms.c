@@ -234,6 +234,10 @@ void sht1x_trans_start(struct sht1x_device *dev, int part1, int part2) {
  */
 unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 	unsigned int v = 0xFF000000;
+	unsigned char orig_crc;
+#ifdef DEBUG
+	unsigned int d_v;
+#endif
 	int bits;
 
 	if (bytes < 1 || bytes > 2)
@@ -277,13 +281,16 @@ unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 		}
 	} while (bits > 0);
 
+#ifdef DEBUG
+	d_v = v;
+#endif
+	orig_crc = dev->crc;
+
 	/* Calculate CRC */
 	if (bytes >= 2)
 		dev->crc = crc_table[dev->crc ^ (v >> 16 & 0x000000FF)];
 	if (bytes >= 1)
 		dev->crc = crc_table[dev->crc ^ (v >> 8 & 0x000000FF)];
-
-//printf("%08x", v);
 
 	/* Reverse checksum bits */
 	v = (v & 0xFFFFFF00)
@@ -296,11 +303,13 @@ unsigned int sht1x_read(struct sht1x_device *dev, int bytes) {
 		| (v << 5 & 0x40)
 		| (v << 7 & 0x80);
 
-//printf("/%02x/%02x", v & 0xFF, dev->crc);
-
 	/* Checksum OK */
 	if ((v & 0xFE) == (dev->crc & 0xFE))
 		v = (v & 0x00FFFFFF);
+
+#ifdef DEBUG
+	fprintf(stderr, "%02x/%02x/%08x/%02x/%02x\n", dev->fd, orig_crc, (v & 0xFF000000) | (d_v & 0x00FFFFFF), v & 0xFF, dev->crc);
+#endif
 
 	/* Move checksum to before MSB/LSB */
 	v = (v & 0xFF000000) | (v >> 8 & 0x0000FFFF) | (v << 16 & 0x00FF0000);

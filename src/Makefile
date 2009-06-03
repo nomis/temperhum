@@ -2,7 +2,7 @@
 .SUFFIXES:
 .SUFFIXES: .c .o
 
-CFLAGS=-Wall -Wextra -Wshadow -D_POSIX_C_SOURCE=200112L -D_ISOC99_SOURCE -D_SVID_SOURCE -O2
+CFLAGS=-Wall -Wextra -Wshadow -D_POSIX_C_SOURCE=200112L -D_ISOC99_SOURCE -D_SVID_SOURCE -O2 -DDEBUG
 TEMPERHUM_OBJS=comms.o readings.o temperhum.o
 EEPROM_DUMP_OBJS=comms.o eeprom_dump.o
 
