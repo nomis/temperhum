@@ -6,7 +6,7 @@ CFLAGS=-Wall -Wextra -Wshadow -D_POSIX_C_SOURCE=200112L -D_ISOC99_SOURCE -D_SVID
 TEMPERHUM_OBJS=comms.o readings.o temperhum.o
 EEPROM_DUMP_OBJS=comms.o eeprom_dump.o
 
-all: temperhum eeprom_dump
+all: temperhum eeprom_dump test
 clean:
 	rm -f temperhum eeprom_dump *.o
 
