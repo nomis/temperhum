@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (cur->ai_family == AF_INET6) {
-			ret = setsockopt(l, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(&one));
+			ret = setsockopt(l, IPPROTO_IPV6, IPV6_V6ONLY, &one, sizeof(one));
 			if (ret != 0) {
 				perror("setsockopt");
 				close(l);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		ret = setsockopt(l, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(&one));
+		ret = setsockopt(l, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 		if (ret != 0) {
 			perror("setsockopt");
 			close(l);
