@@ -77,8 +77,8 @@
  */
 #define MIN_DEWPC 0.0
 #define MIN_DEWPC_WARN 6.0
-#define MAX_DEWPC_WARN 18.0
-#define MAX_DEWPC 21.0
+#define MAX_DEWPC_WARN 16.0
+#define MAX_DEWPC 18.0
 
 int tray_init(struct th_data *data);
 void tray_reset(HWND hWnd, struct th_data *data);
