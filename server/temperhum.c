@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 
 listen_failed:
 		if (hbuf[0] != 0 && sbuf[0] != 0)
-			fprintf(stderr, "Unable to listen node \"%s\" service \"%s\"\n", hbuf, sbuf);
+			fprintf(stderr, "Unable to listen on node \"%s\" service \"%s\"\n", hbuf, sbuf);
 	}
 
 	if (servers == NULL) {
