@@ -69,7 +69,7 @@ double sht1x_sample(struct sht1x_device *dev, struct sht1x_readings readings, in
 		else
 			D2 = 0.01;
 
-		return D1 + D2 * (resp & 0x0000FFFF);
+		return D1 + D2 * (resp & 0x0000FFFF) + dev->tc_offset;
 	} else if (type == HUMIDITY) {
 		double C1, C2, C3;
 		double T1, T2;

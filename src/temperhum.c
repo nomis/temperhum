@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <math.h>
 #include <rrd.h>
 #include <signal.h>
@@ -124,6 +125,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	for (i = 1; i < argc; i++) {
+		char config[4096];
+		FILE *cfg_fd;
+
 		current = malloc(sizeof(struct sht1x_device));
 		if (current == NULL) {
 			status = EXIT_FAILURE;
@@ -138,6 +142,29 @@ int main(int argc, char *argv[]) {
 
 		sht1x_open(current);
 		temperhum_rrd_create(current->rrdfile);
+
+		current->tc_offset = 0;
+		snprintf(config, sizeof(config), "%s.conf", current->name);
+		errno = 0;
+		cfg_fd = fopen(config, "r");
+		if (cfg_fd != NULL) {
+			char buf[1024];
+			if (fgets(buf, sizeof(buf), cfg_fd) != NULL) {
+				errno = 0;
+				current->tc_offset = strtod(buf, NULL);
+
+				if (errno != 0) {
+					fprintf(stderr, "Error reading config for %s (%s)\n", current->name, strerror(errno));
+					status = EXIT_FAILURE;
+					goto closeall;
+				}
+			}
+			fclose(cfg_fd);
+		} else if (errno != ENOENT) {
+			fprintf(stderr, "Error opening config for %s (%s)\n", current->name, strerror(errno));
+			status = EXIT_FAILURE;
+			goto closeall;
+		}
 
 		err = sht1x_device_reset(current);
 		if (err) {

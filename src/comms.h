@@ -54,6 +54,7 @@ struct sht1x_device {
 	unsigned char crc_init;
 	unsigned char crc;
 	int fd;
+	double tc_offset;
 	struct sht1x_status status;
 	struct sht1x_device *next;
 };
