@@ -31,7 +31,7 @@ double sht1x_sample(struct sht1x_device *dev, struct sht1x_readings readings, in
 	if (type == TEMP) {
 		err = sht1x_command(dev, SHT1X_ADDR, SHT1X_CMD_M_TEMP);
 	} else if (type == HUMIDITY) {
-		/* Don't bother reading humidity with temperature */
+		/* Don't bother reading humidity without temperature */
 		if (isnan(readings.temperature_celsius))
 			return NAN;
 
@@ -114,7 +114,7 @@ struct sht1x_readings sht1x_getreadings(struct sht1x_device *dev, int low_resolu
 	readings.temperature_celsius = sht1x_sample(dev, readings, low_resolution, TEMP);
 	readings.relative_humidity = sht1x_sample(dev, readings, low_resolution, HUMIDITY);
 
-	/* Calculate de point */
+	/* Calculate dew point */
 	if (!isnan(readings.temperature_celsius) && !isnan(readings.relative_humidity)) {
 		double TN, M;
 		double tmp;
