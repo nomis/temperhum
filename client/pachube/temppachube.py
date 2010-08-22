@@ -74,7 +74,7 @@ while True:
 	elif line[0] == "SENSF":
 		sensor = None
 	elif all == 2 and line[0] == "TEMPC" and sensor in sensors:
-		feed.update([eeml.Data("temp.{0}".format(sensor), line[1])])
+		feed.update([eeml.Data("temp.{0}".format(sensors[sensor]), line[1])])
 		now = time.time()
 		if now - last >= 59:
 			last = now
