@@ -52,5 +52,8 @@ while True:
 		now = time.time()
 		if now - last >= 59:
 			last = now
-			feed.put()
+			try:
+				feed.put()
+			except Exception, e:
+				print(e)
 			feed = None
