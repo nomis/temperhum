@@ -35,7 +35,7 @@ BEGIN
 			VALUE "ProductName", TITLE
 			VALUE "ProductVersion", GIT_REV
 			VALUE "OriginalFilename", "temperhum.exe\0"
-			VALUE "Licence", RC_GPL_2
+			VALUE "Licence", RC_GPL_3
 		END
 	END
 	BLOCK "VarFileInfo"
