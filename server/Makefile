@@ -15,4 +15,4 @@ clean:
 temperhum.o: temperhum.h
 
 temperhum: $(TEMPERHUM_OBJS) Makefile
-	$(CC) $(CFLAGS) -lm -lrt -lrrd -o $@ $(TEMPERHUM_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(TEMPERHUM_OBJS) -lm -lrt -lrrd
