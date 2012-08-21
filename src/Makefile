@@ -18,9 +18,9 @@ readings.o: readings.h comms.h
 comms.o: comms.h
 
 temperhum: $(TEMPERHUM_OBJS) Makefile
-	$(CC) $(CFLAGS) -lm -lrt -lrrd -o $@ $(TEMPERHUM_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(TEMPERHUM_OBJS) -lm -lrt -lrrd
 
 eeprom_dump.o: comms.h
 
 eeprom_dump: $(EEPROM_DUMP_OBJS) Makefile
-	$(CC) $(CFLAGS) -lrt -o $@ $(EEPROM_DUMP_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(EEPROM_DUMP_OBJS) -lrt
