@@ -352,9 +352,11 @@ listen_failed:
 
 					ret |= th_send(current_c->fd, "SENSF\n", 0);
 
-					last_c = current_c;
-					current_c = next;
-					continue;
+					if (!ret) {
+						last_c = current_c;
+						current_c = next;
+						continue;
+					}
 				}
 
 				if (current_c == clients)
