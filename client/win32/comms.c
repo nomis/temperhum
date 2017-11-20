@@ -521,6 +521,11 @@ int comms_activity(HWND hWnd, struct th_data *data, SOCKET s, WORD sEvent, WORD 
 			status->msg[0] = 0;
 		tray_update(hWnd, data);
 
+		SetLastError(0);
+		ret = closesocket(data->s);
+		err = GetLastError();
+		odprintf("closesocket: %d (%ld)", ret, err);
+
 		data->s = INVALID_SOCKET;
 		return 1;
 
